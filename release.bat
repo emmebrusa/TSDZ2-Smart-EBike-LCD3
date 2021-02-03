@@ -33,8 +33,8 @@ IF NOT EXIST %release_folder% (
 :error
 ECHO:
 ECHO Failed with error code %errorlevel%.
-PAUSE
 ECHO:
+pause
 EXIT /b %errorlevel%
 
 @ECHO ON

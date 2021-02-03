@@ -335,6 +335,7 @@ const static uint8_t ui8_pas_old_valid_state[4] = { 0x01, 0x03, 0x00, 0x02 };
 
 // wheel speed sensor
 volatile uint16_t ui16_wheel_speed_sensor_ticks = 0;
+volatile uint16_t ui16_wheel_speed_sensor_ticks_counter_min = 0;
 volatile uint32_t ui32_wheel_speed_sensor_ticks_total = 0;
 
 void read_battery_voltage(void);
@@ -352,14 +353,6 @@ void motor_controller(void) {
 // Hall sensor B positivie to negative transition | BEMF phase A at max value / top of sinewave
 // Hall sensor C positive to negative transition | BEMF phase C at max value / top of sinewave
 
-#ifdef PWM_TIME_DEBUG
-volatile uint16_t ui16_pwm_cnt_down_irq;
-volatile uint16_t ui16_pwm_cnt_up_irq;
-#endif
-
-#ifdef MAIN_TIME_DEBUG
-extern volatile uint8_t ui8_main_time;
-#endif
 
 // PWM cycle interrupt
 // TIM1 is center aligned and every cycle counts up from 0 to 400 and then down from 400 to 0 (25+25us = 50us total time)
@@ -666,18 +659,6 @@ void TIM1_CAP_COM_IRQHandler(void) __interrupt(TIM1_CAP_COM_IRQHANDLER)
         TIM1->CCR1H = (uint8_t) (ui8_phase_a_voltage >> 7);
         TIM1->CCR1L = (uint8_t) (ui8_phase_a_voltage << 1);
 
-        #ifdef PWM_TIME_DEBUG
-            #ifndef __CDT_PARSER__ // avoid Eclipse syntax check
-            __asm
-                ld  a, 0x5250
-                and a, #0x10 // counter direction end irq
-                or  a, 0x525e // TIM1->CNTRH
-                ld  _ui16_pwm_cnt_down_irq+0, a      // ui16_pwm_cnt_down_irq MSB = TIM1->CNTRH | direction
-                mov _ui16_pwm_cnt_down_irq+1, 0x525f // ui16_pwm_cnt_down_irq LSB = TIM1->CNTRL
-            __endasm;
-            #endif
-        #endif
-
     } else {
         /****************************************************************************/
 
@@ -818,33 +799,40 @@ void TIM1_CAP_COM_IRQHandler(void) __interrupt(TIM1_CAP_COM_IRQHANDLER)
 
         // check wheel speed sensor pin state
         uint8_t ui8_wheel_speed_sensor_pin_state = WHEEL_SPEED_SENSOR__PORT->IDR & WHEEL_SPEED_SENSOR__PIN;
+		
+		// check wheel speed sensor ticks counter min value
+		if(ui16_wheel_speed_sensor_ticks) { ui16_wheel_speed_sensor_ticks_counter_min = ui16_wheel_speed_sensor_ticks >> 3; }
+		else { ui16_wheel_speed_sensor_ticks_counter_min = WHEEL_SPEED_SENSOR_TICKS_COUNTER_MIN >> 3; }
 
-        // check if wheel speed sensor pin state has changed
-        if (ui8_wheel_speed_sensor_pin_state != ui8_wheel_speed_sensor_pin_state_old) {
-            // update old wheel speed sensor pin state
-            ui8_wheel_speed_sensor_pin_state_old = ui8_wheel_speed_sensor_pin_state;
+		if(!ui8_wheel_speed_sensor_ticks_counter_started ||
+		  (ui16_wheel_speed_sensor_ticks_counter > ui16_wheel_speed_sensor_ticks_counter_min)) {  
+			// check if wheel speed sensor pin state has changed
+			if (ui8_wheel_speed_sensor_pin_state != ui8_wheel_speed_sensor_pin_state_old) {
+				// update old wheel speed sensor pin state
+				ui8_wheel_speed_sensor_pin_state_old = ui8_wheel_speed_sensor_pin_state;
 
-            // only consider the 0 -> 1 transition
-            if (ui8_wheel_speed_sensor_pin_state) {
-                // check if first transition
-                if (!ui8_wheel_speed_sensor_ticks_counter_started) {
-                    // start wheel speed sensor ticks counter as this is the first transition
-                    ui8_wheel_speed_sensor_ticks_counter_started = 1;
-                } else {
-                    // check if wheel speed sensor ticks counter is out of bounds
-                    if (ui16_wheel_speed_sensor_ticks_counter < WHEEL_SPEED_SENSOR_TICKS_COUNTER_MAX) {
-                        ui16_wheel_speed_sensor_ticks = 0;
-                        ui16_wheel_speed_sensor_ticks_counter = 0;
-                        ui8_wheel_speed_sensor_ticks_counter_started = 0;
-                    } else {
-                        ui16_wheel_speed_sensor_ticks = ui16_wheel_speed_sensor_ticks_counter;
-                        ui16_wheel_speed_sensor_ticks_counter = 0;
-                        ++ui32_wheel_speed_sensor_ticks_total;
-                    }
-                }
-            }
-        }
-
+				// only consider the 0 -> 1 transition
+				if (ui8_wheel_speed_sensor_pin_state) {
+					// check if first transition
+					if (!ui8_wheel_speed_sensor_ticks_counter_started) {
+						// start wheel speed sensor ticks counter as this is the first transition
+						ui8_wheel_speed_sensor_ticks_counter_started = 1;
+					} else {
+						// check if wheel speed sensor ticks counter is out of bounds
+						if (ui16_wheel_speed_sensor_ticks_counter < WHEEL_SPEED_SENSOR_TICKS_COUNTER_MAX) {
+							ui16_wheel_speed_sensor_ticks = 0;
+							ui16_wheel_speed_sensor_ticks_counter = 0;
+							ui8_wheel_speed_sensor_ticks_counter_started = 0;
+						} else {
+							ui16_wheel_speed_sensor_ticks = ui16_wheel_speed_sensor_ticks_counter;
+							ui16_wheel_speed_sensor_ticks_counter = 0;
+							++ui32_wheel_speed_sensor_ticks_total;
+						}
+					}
+				}
+			}
+		}
+		
         // increment and also limit the ticks counter
         if (ui8_wheel_speed_sensor_ticks_counter_started)
             if (ui16_wheel_speed_sensor_ticks_counter < WHEEL_SPEED_SENSOR_TICKS_COUNTER_MIN) {
@@ -855,22 +843,6 @@ void TIM1_CAP_COM_IRQHandler(void) __interrupt(TIM1_CAP_COM_IRQHANDLER)
                 ui16_wheel_speed_sensor_ticks_counter = 0;
                 ui8_wheel_speed_sensor_ticks_counter_started = 0;
             }
-
-        #ifdef MAIN_TIME_DEBUG
-            ui8_main_time++;
-        #endif
-
-        #ifdef PWM_TIME_DEBUG
-            #ifndef __CDT_PARSER__ // avoid Eclipse syntax check
-            __asm
-                ld  a, 0x5250
-                and a, #0x10 // counter direction end irq
-                or  a, 0x525e // TIM1->CNTRH
-                ld  _ui16_pwm_cnt_up_irq+0, a      // ui16_pwm_cnt_up_irq MSB = TIM1->CNTRH | direction
-                mov _ui16_pwm_cnt_up_irq+1, 0x525f // ui16_pwm_cnt_up_irq LSB = TIM1->CNTRL
-            __endasm;
-            #endif
-        #endif
     }
 
     /****************************************************************************/
@@ -963,19 +935,6 @@ void calc_foc_angle(void) {
     // ---------------------------------------------------------------------------------------------------------------------
 
     ui16_l_x1048576 = p_configuration_variables->ui8_motor_inductance_x1048576;
-    /*
-    switch (p_configuration_variables->ui8_motor_inductance_x1048576) {
-        case 0:
-        case 2:
-            ui16_l_x1048576 = 142; // 48 V motor
-            break;
-        //case 1:
-        //case 3:
-        default:
-            ui16_l_x1048576 = 80; // 36 V motor
-            break;
-    }
-    */
 
     // calc IwL
     ui16_iwl_128 = ((uint32_t)((uint32_t)ui16_i_phase_current_x2 * ui16_l_x1048576) * ui32_w_angular_velocity_x16 ) >> 18;

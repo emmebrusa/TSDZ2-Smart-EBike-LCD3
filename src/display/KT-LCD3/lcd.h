@@ -1,7 +1,7 @@
 /*
  * LCD3 firmware
  *
- * Copyright (C) Casainho, 2018.
+ * Copyright (C) Casainho and Leon, 2019.
  *
  * Released under the GPL License, Version 3
  */
@@ -11,6 +11,8 @@
 
 #include "main.h"
 #include "stm8s_gpio.h"
+
+extern volatile uint8_t ui8_error_write_eeprom;
 
 typedef struct _motor_controller_data
 {
@@ -33,25 +35,27 @@ typedef struct _motor_controller_data
   uint32_t ui32_wheel_speed_sensor_tick_counter_offset;
   uint16_t ui16_pedal_torque_x100;
   uint16_t ui16_pedal_power_x10;
+  uint16_t ui16_adc_pedal_torque_delta_calc;
 } struct_motor_controller_data;
 
 typedef struct _configuration_variables
 {
-  uint16_t ui16_cadence_sensor_pulse_high_percentage_x10;
+  //uint16_t ui16_cadence_sensor_pulse_high_percentage_x10;
   uint8_t ui8_assist_without_pedal_rotation_threshold;
   uint8_t ui8_light_mode;
   uint8_t ui8_lights_state;
   uint8_t ui8_lights_configuration;
   uint8_t ui8_assist_level;
   uint8_t ui8_number_of_assist_levels;
-  uint8_t ui8_power_assist_function_enabled;
+  //uint8_t ui8_power_assist_function_enabled;
   uint8_t ui8_power_assist_level[9];
-  uint8_t ui8_torque_assist_function_enabled;
+  //uint8_t ui8_torque_assist_function_enabled;
   uint8_t ui8_torque_assist_level[9];
-  uint8_t ui8_cadence_assist_function_enabled;
+  //uint8_t ui8_cadence_assist_function_enabled;
   uint8_t ui8_cadence_assist_level[9];
   uint8_t ui8_eMTB_assist_function_enabled;
-  uint8_t ui8_eMTB_assist_sensitivity;
+  //uint8_t ui8_eMTB_assist_sensitivity;
+  uint8_t ui8_eMTB_assist_level[10];
   uint8_t ui8_walk_assist_function_enabled;
   uint8_t ui8_walk_assist_button_bounce_time;
   uint8_t ui8_walk_assist_level[9];
@@ -106,7 +110,7 @@ typedef struct _configuration_variables
   uint32_t ui32_odometer_x10;
   uint32_t ui32_trip_x10;
   uint8_t ui8_motor_acceleration;
-  uint8_t ui8_cadence_sensor_mode;
+  //uint8_t ui8_cadence_sensor_mode;
   uint8_t ui8_show_cruise_function_set_target_speed;
   uint8_t ui8_wheel_speed_field_state;
   uint8_t ui8_show_distance_data_odometer_field;
@@ -118,6 +122,16 @@ typedef struct _configuration_variables
   uint8_t ui8_show_motor_temperature_odometer_field;
   uint8_t ui8_show_battery_SOC_odometer_field;
   uint8_t ui8_main_screen_power_menu_enabled;
+
+  uint8_t ui8_adc_pedal_torque_offset_set;
+  uint16_t ui16_adc_pedal_torque_range; 
+  uint16_t ui16_startup_boost_torque_factor;
+  uint8_t ui8_startup_boost_cadence_step;
+  uint8_t ui8_coaster_brake_torque_threshold;
+  uint8_t ui8_startup_boost_enabled;
+  uint8_t ui8_torque_sensor_calibration_enabled;
+  uint8_t ui8_assist_whit_error_enabled;
+  uint8_t ui8_riding_mode;
 } struct_configuration_variables;
 
 

@@ -18,8 +18,10 @@ PLATFORM = stm8
 PNAME = main
 
 #Directory for helpers
-IDIR = STM8S_StdPeriph_Lib/inc
-SDIR = STM8S_StdPeriph_Lib/src
+IDIR = ../common/STM8S_StdPeriph_Lib/inc
+SDIR = ../common/STM8S_StdPeriph_Lib/src
+SDIR1 = ../common
+IDIR1 = ../common
 
 # In case you ever want a different name for the main source file
 MAINSRC = $(PNAME).c
@@ -39,7 +41,7 @@ ELF_SECTIONS_TO_REMOVE = -R DATA -R INITIALIZED -R SSEG -R .debug_line -R .debug
 	$(SDIR)/stm8s_exti.c \
 	$(SDIR)/stm8s_adc1.c \
 	$(SDIR)/stm8s_flash.c \
-	common.c \
+	$(SDIR1)/common.c \
 	watchdog.c \
 	torque_sensor.c \
 	uart.c \
@@ -59,9 +61,9 @@ ebike_app.h pins.h lights.h
 # The list of .rel files can be derived from the list of their source files
 RELS = $(EXTRASRCS:.c=.rel)
 
-INCLUDES = -I$(IDIR) -I.
-CFLAGS = -m$(PLATFORM) -Ddouble=float --std-c99 --nolospre --opt-code-speed 
-ELF_FLAGS = --out-fmt-ihx
+INCLUDES = -I$(IDIR) -I$(IDIR1) -I. -I../
+CFLAGS = -m$(PLATFORM) -Ddouble=float --std-c99 --nolospre 
+ELF_FLAGS = --out-fmt-ihx --debug
 LIBS =
 
 # This just provides the conventional target name "all"; it is optional

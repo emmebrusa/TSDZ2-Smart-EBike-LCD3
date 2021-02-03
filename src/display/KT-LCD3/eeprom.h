@@ -1,7 +1,7 @@
 /*
  * LCD3 firmware
  *
- * Copyright (C) Casainho, 2018.
+ * Copyright (C) Casainho and Leon, 2019.
  *
  * Released under the GPL License, Version 3
  */
@@ -36,7 +36,8 @@
 #define ADDRESS_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_0                           20
 #define ADDRESS_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_1                           21
 #define ADDRESS_MOTOR_TYPE                                                  22
-#define ADDRESS_POWER_ASSIST_FUNCTION_ENABLED                               23
+//#define ADDRESS_POWER_ASSIST_FUNCTION_ENABLED                               23
+#define ADDRESS_STARTUP_BOOST_ENABLED										23
 #define ADDRESS_POWER_ASSIST_LEVEL_1                                        24
 #define ADDRESS_POWER_ASSIST_LEVEL_2                                        25
 #define ADDRESS_POWER_ASSIST_LEVEL_3                                        26
@@ -107,7 +108,8 @@
 #define ADDRESS_SHOW_MOTOR_TEMPERATURE_ODOMETER_FIELD                       91
 #define ADDRESS_SHOW_BATTERY_SOC_ODOMETER_FIELD                             92
 #define ADDRESS_MAIN_SCREEN_POWER_MENU_ENABLED                              93
-#define ADDRESS_TORQUE_ASSIST_FUNCTION_ENABLED                              94
+//#define ADDRESS_TORQUE_ASSIST_FUNCTION_ENABLED                              94
+#define ADDRESS_TORQUE_SENSOR_CALIBRATION_ENABLED							94
 #define ADDRESS_TORQUE_ASSIST_LEVEL_1                                       95
 #define ADDRESS_TORQUE_ASSIST_LEVEL_2                                       96
 #define ADDRESS_TORQUE_ASSIST_LEVEL_3                                       97
@@ -117,7 +119,8 @@
 #define ADDRESS_TORQUE_ASSIST_LEVEL_7                                       101
 #define ADDRESS_TORQUE_ASSIST_LEVEL_8                                       102
 #define ADDRESS_TORQUE_ASSIST_LEVEL_9                                       103
-#define ADDRESS_CADENCE_ASSIST_FUNCTION_ENABLED                             104
+//#define ADDRESS_CADENCE_ASSIST_FUNCTION_ENABLED                             104
+#define ADDRESS_ASSISTANCE_WITH_ERROR_ENABLED								104
 #define ADDRESS_CADENCE_ASSIST_LEVEL_1                                      105
 #define ADDRESS_CADENCE_ASSIST_LEVEL_2                                      106
 #define ADDRESS_CADENCE_ASSIST_LEVEL_3                                      107
@@ -127,22 +130,40 @@
 #define ADDRESS_CADENCE_ASSIST_LEVEL_7                                      111
 #define ADDRESS_CADENCE_ASSIST_LEVEL_8                                      112
 #define ADDRESS_CADENCE_ASSIST_LEVEL_9                                      113
-#define ADDRESS_CADENCE_SENSOR_MODE                                         114
+//#define ADDRESS_CADENCE_SENSOR_MODE                                         114
+#define ADDRESS_COASTER_BRAKE_TORQUE_THRESHOLD                              114
 #define ADDRESS_EMTB_ASSIST_FUNCTION_ENABLED                                115
-#define ADDRESS_EMTB_ASSIST_SENSITIVITY                                     116
-#define ADDRESS_PEDAL_TORQUE_PER_10_BIT_ADC_STEP_X100                       117
-#define ADDRESS_TEMPERATURE_FIELD_STATE                                     118
-#define ADDRESS_CADENCE_SENSOR_PULSE_HIGH_PERCENTAGE_X10_0                  119
-#define ADDRESS_CADENCE_SENSOR_PULSE_HIGH_PERCENTAGE_X10_1                  120
-#define ADDRESS_LIGHTS_MODE                                                 121
-#define ADDRESS_LIGHTS_STATE                                                122
-#define ADDRESS_ASSIST_WITHOUT_PEDAL_ROTATION_THRESHOLD                     123
-#define ADDRESS_LIGHTS_CONFIGURATION                                        124
-#define ADDRESS_WALK_ASSIST_BUTTON_BOUNCE_TIME                              125
-#define EEPROM_BYTES_STORED                                                 126
+//#define ADDRESS_EMTB_ASSIST_SENSITIVITY                                     116
+#define ADDRESS_PEDAL_TORQUE_PER_10_BIT_ADC_STEP_X100                       116
+#define ADDRESS_TEMPERATURE_FIELD_STATE                                     117
+//#define ADDRESS_CADENCE_SENSOR_PULSE_HIGH_PERCENTAGE_X10_0                  119
+//#define ADDRESS_CADENCE_SENSOR_PULSE_HIGH_PERCENTAGE_X10_1                  120
+#define ADDRESS_LIGHTS_MODE                                                 118
+#define ADDRESS_LIGHTS_STATE                                                119
+#define ADDRESS_ASSIST_WITHOUT_PEDAL_ROTATION_THRESHOLD                     120
+#define ADDRESS_LIGHTS_CONFIGURATION                                        121
+#define ADDRESS_WALK_ASSIST_BUTTON_BOUNCE_TIME                              122
+#define ADDRESS_PEDAL_TORQUE_ADC_OFFSET		                     			123
+#define ADDRESS_PEDAL_TORQUE_ADC_RANGE_0		                   			124
+#define ADDRESS_PEDAL_TORQUE_ADC_RANGE_1		                   			125
+#define ADDRESS_STARTUP_BOOST_TORQUE_FACTOR_0								126
+#define ADDRESS_STARTUP_BOOST_TORQUE_FACTOR_1								127
+#define ADDRESS_STARTUP_BOOST_CADENCE_STEP									128
+#define ADDRESS_RIDING_MODE_ON_STARTUP										129
+#define ADDRESS_EMTB_ASSIST_LEVEL_1                                      	130
+#define ADDRESS_EMTB_ASSIST_LEVEL_2                                      	131
+#define ADDRESS_EMTB_ASSIST_LEVEL_3                                      	132
+#define ADDRESS_EMTB_ASSIST_LEVEL_4                                      	133
+#define ADDRESS_EMTB_ASSIST_LEVEL_5                                      	134
+#define ADDRESS_EMTB_ASSIST_LEVEL_6                                      	135
+#define ADDRESS_EMTB_ASSIST_LEVEL_7                                      	136
+#define ADDRESS_EMTB_ASSIST_LEVEL_8                                      	137
+#define ADDRESS_EMTB_ASSIST_LEVEL_9                                      	138
+#define ADDRESS_EMTB_ASSIST_LEVEL_10	                                    139
+#define EEPROM_BYTES_STORED                                                 140
 
 
-#define DEFAULT_VALUE_KEY     202
+#define DEFAULT_VALUE_KEY     203
 #define SET_TO_DEFAULT        0
 #define READ_FROM_MEMORY      1
 #define WRITE_TO_MEMORY       2

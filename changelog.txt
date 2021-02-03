@@ -1,0 +1,71 @@
+TSDZ2 Open Source Firmware 20beta1.C for KT-LCD3 display
+
+Motor changes
+
+ 1 - Added field weakening function to increase the motor speed (by mspider65).
+ 2 - Added other optimizations to motor control, torque sensor and cadence sensor (by mspider65).
+ 3 - Added startup boost function in POWER assist mode, enable/disable and parameters at display.
+ 4 - Added HYBRID assist mode, TORQUE + POWER, can be set on the display.
+ 5 - Added eMTB mode on multiple levels, can be set on the display.
+ 6 - Improved "Start-up without pedal rotation" function.
+ 7 - Added a filter to the speed sensor to avoid problems of adjusting the distance from the magnet.
+ 8 - Added error E08 due to speed sensor failure or missing magnet.
+ 9 - Added error E03 cadence sensor failure.
+10 - Added error E01 overvoltage.
+11 - Added error E09 write eeprom problem.
+12 - Added "Assist with sensors error" function, to force assistance with sensors problem.
+
+Display Menu
+
+0.3  removed "Experimental high cadence mode", choice of motor only 0 = 48V or 1 = 36V
+0.11 added "Number of assist levels"
+
+2.0  removed "Enable Power Assist", replaced with -> "Startup Boost" enable/disable
+2.1  removed "Number of assist levels", moved in 0.11
+
+3.0  removed "Enable Torque Assist", replaced with -> "Torque sensor calibration" enable/disable
+3.1  removed "Number of assist levels", moved in 0.11
+
+4.0  removed "Enable Cadence Assist", replaced with -> "Assist with error enabled"
+4.1  removed "Number of assist levels", moved in 0.11
+
+5.1  removed "Sensitivity eMTB", replaced with -> "eMTB assist level 1"
+5.x  added "eMTB assist levels" until 9 + 1
+
+10.4  removed "Cadence sensor mode" standard/advanced, replaced with -> "Coaster brake torque threshold"
+10.9  added "Pedal torque ADC offset"
+10.10 added "Pedal torque ADC max"
+10.11 added "Startup Boost torque factor"
+10.12 added "Startup Boost cadence step"
+
+11.7 removed "Cadence sensor magnet pulse percentage", replaced with -> "Pedal torque delta"
+
+The choice of assistance mode is in the main screen.
+At level 0, ON/OFF button to view the current mode, UP/DOWN button to change, ON/OFF button to confirm.
+
+Assistance values for all modes from 1 to 254, for eMTB from 1 to 20.
+
+Error code
+E01 ERROR_OVERVOLTAGE
+E02 ERROR_TORQUE_SENSOR
+E03 ERROR_CADENCE_SENSOR
+E04 ERROR_MOTOR_BLOCKED
+E08 ERROR_SPEED_SENSOR
+E09 ERROR_WRITE_EEPROM
+
+Modified files LCD3
+eeprom.c
+eeprom.h
+lcd.c
+lcd.h
+main.c
+main.h
+uart.c
+
+Modified files TSDZ2
+ebike_app.c
+ebike_app.h
+main.c
+main.h
+motor.c
+

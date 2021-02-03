@@ -1,7 +1,7 @@
 /*
  * LCD3 firmware
  *
- * Copyright (C) Casainho, 2018.
+ * Copyright (C) Casainho and Leon, 2019.
  *
  * Released under the GPL License, Version 3
  */
@@ -101,6 +101,9 @@ void uart_data_clock (void)
   struct_motor_controller_data *p_motor_controller_data;
   struct_configuration_variables *p_configuration_variables;
 
+  uint8_t ui8_temp;
+  uint16_t ui16_temp;
+  
   if (ui8_received_package_flag)
   {
     // validation of the package data
@@ -126,9 +129,10 @@ void uart_data_clock (void)
       // wheel speed
       p_motor_controller_data->ui16_wheel_speed_x10 = (((uint16_t) ui8_rx_buffer [5]) << 8) + ((uint16_t) ui8_rx_buffer [4]);
       
-      // brake state
+      // brake state (bit 0)
       p_motor_controller_data->ui8_braking = ui8_rx_buffer[6] & 1;
-      
+      // Bit free for future use
+	  
       // value from optional ADC channel
       p_motor_controller_data->ui8_adc_throttle = ui8_rx_buffer[7];
       
@@ -136,18 +140,14 @@ void uart_data_clock (void)
       switch (p_configuration_variables->ui8_optional_ADC_function)
       {
         case THROTTLE_CONTROL:
-        
-          // throttle value with offset applied and mapped from 0 to 255
-          p_motor_controller_data->ui8_throttle = ui8_rx_buffer[8];
-        
-        break;
+			// throttle value with offset applied and mapped from 0 to 255
+			p_motor_controller_data->ui8_throttle = ui8_rx_buffer[8];
+			break;
         
         case TEMPERATURE_CONTROL:
-        
-          // current limiting mapped from 0 to 255
-          p_motor_controller_data->ui8_temperature_current_limiting_value = ui8_rx_buffer[8];
-        
-        break;
+			// current limiting mapped from 0 to 255
+			p_motor_controller_data->ui8_temperature_current_limiting_value = ui8_rx_buffer[8];
+			break;
       }
       
       // ADC pedal torque
@@ -180,11 +180,8 @@ void uart_data_clock (void)
       // human power x10
       p_motor_controller_data->ui16_pedal_power_x10 = (((uint16_t) ui8_rx_buffer [24]) << 8) + ((uint16_t) ui8_rx_buffer [23]);
       
-      // cadence sensor pulse high percentage
-      if (p_configuration_variables->ui8_cadence_sensor_mode == CALIBRATION_MODE)
-      {
-        p_configuration_variables->ui16_cadence_sensor_pulse_high_percentage_x10 = (((uint16_t) ui8_rx_buffer [26]) << 8) + ((uint16_t) ui8_rx_buffer [25]);        
-      }
+	  // Free for future use
+      p_motor_controller_data->ui16_adc_pedal_torque_delta_calc = (((uint16_t) ui8_rx_buffer [26]) << 8) + ((uint16_t) ui8_rx_buffer [25]);        
 
       // flag that the first communication package is received from the motor controller
       ui8_received_first_package = 1;
@@ -199,72 +196,39 @@ void uart_data_clock (void)
       // message ID
       ui8_tx_buffer[1] = ui8_message_ID;
       
-      // riding mode
-      ui8_tx_buffer[2] = p_motor_controller_data->ui8_riding_mode;
+      // lights state & riding mode
+      ui8_tx_buffer[2] = p_configuration_variables->ui8_lights_state |
+						(p_motor_controller_data->ui8_riding_mode << 4);
       
       // riding mode parameter
       switch (p_motor_controller_data->ui8_riding_mode)
       {
         case POWER_ASSIST_MODE:
-        
-          if (p_configuration_variables->ui8_assist_level > 0)
-          {
             ui8_tx_buffer[3] = p_configuration_variables->ui8_power_assist_level[p_configuration_variables->ui8_assist_level - 1];
-          }
-          else
-          {
-            ui8_tx_buffer[3] = 0;
-          }
-          
-        break;
+          break;
 
         case TORQUE_ASSIST_MODE:
-        
-          if (p_configuration_variables->ui8_assist_level > 0)
-          {
             ui8_tx_buffer[3] = p_configuration_variables->ui8_torque_assist_level[p_configuration_variables->ui8_assist_level - 1];
-          }
-          else
-          {
-            ui8_tx_buffer[3] = 0;
-          }
-          
-        break;
+          break;
         
         case CADENCE_ASSIST_MODE:
-        
-          if (p_configuration_variables->ui8_assist_level > 0)
-          {
             ui8_tx_buffer[3] = p_configuration_variables->ui8_cadence_assist_level[p_configuration_variables->ui8_assist_level - 1];
-          }
-          else
-          {
-            ui8_tx_buffer[3] = 0;
-          }
-          
-        break;
+          break;
         
         case eMTB_ASSIST_MODE:
-        
-          ui8_tx_buffer[3] = p_configuration_variables->ui8_eMTB_assist_sensitivity;
-          
-        break;
-        
+			ui8_tx_buffer[3] = p_configuration_variables->ui8_eMTB_assist_level[p_configuration_variables->ui8_assist_level - 1];
+		  break;
+		  
+        case HYBRID_ASSIST_MODE:
+            ui8_tx_buffer[3] = p_configuration_variables->ui8_power_assist_level[p_configuration_variables->ui8_assist_level - 1];
+			ui8_tx_buffer[4] = p_configuration_variables->ui8_torque_assist_level[p_configuration_variables->ui8_assist_level - 1];
+          break;
+		  
         case WALK_ASSIST_MODE:
-        
-          if (p_configuration_variables->ui8_assist_level > 0)
-          {
             ui8_tx_buffer[3] = p_configuration_variables->ui8_walk_assist_level[p_configuration_variables->ui8_assist_level - 1];
-          }
-          else
-          {
-            ui8_tx_buffer[3] = 0;
-          }
-
-        break;
+          break;
         
         case CRUISE_MODE:
-
           if (p_configuration_variables->ui8_cruise_function_set_target_speed_enabled)
           {
             ui8_tx_buffer[3] = p_configuration_variables->ui8_cruise_function_target_speed_kph;
@@ -273,82 +237,81 @@ void uart_data_clock (void)
           {
             ui8_tx_buffer[3] = 0;
           }
-          
-        break;
+		  break;
         
         default:
-        
           ui8_tx_buffer[3] = 0;
-          
-        break;
+		  ui8_tx_buffer[4] = 0;
+		  break;
       }
       
-      // set lights state
-      ui8_tx_buffer[4] = p_configuration_variables->ui8_lights_state;
-
+	  if (p_configuration_variables->ui8_assist_level == 0)
+	  {
+        ui8_tx_buffer[3] = 0;
+		ui8_tx_buffer[4] = 0;
+	  }
+	  
       switch (ui8_message_ID)
       {
         case 0:
-        
           // battery low voltage cut off x10
           ui8_tx_buffer[5] = (uint8_t) (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 & 0xff);
           ui8_tx_buffer[6] = (uint8_t) (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 >> 8);
           
           // wheel max speed
           if (p_configuration_variables->ui8_street_mode_enabled)
-          {
-            ui8_tx_buffer[7] = p_configuration_variables->ui8_street_mode_speed_limit;
+		  {
+			ui8_tx_buffer[7] = p_configuration_variables->ui8_street_mode_speed_limit;
           }
           else
           {
             ui8_tx_buffer[7] = p_configuration_variables->ui8_wheel_max_speed;
           }
-          
-        break;
+          break;
         
         case 1:
-        
           // wheel perimeter
           ui8_tx_buffer[5] = (uint8_t) (p_configuration_variables->ui16_wheel_perimeter & 0xff);
           ui8_tx_buffer[6] = (uint8_t) (p_configuration_variables->ui16_wheel_perimeter >> 8);
           
           // optional ADC function, disable throttle if set to be disabled in Street Mode
-          if (p_configuration_variables->ui8_street_mode_enabled && !p_configuration_variables->ui8_street_mode_throttle_enabled && p_configuration_variables->ui8_optional_ADC_function == THROTTLE_CONTROL)
-          {
-            ui8_tx_buffer[7] = 0;
-          }
-          else
-          {
-            ui8_tx_buffer[7] = p_configuration_variables->ui8_optional_ADC_function;
-          }
+		  ui8_temp = p_configuration_variables->ui8_optional_ADC_function;
+          if ((p_configuration_variables->ui8_optional_ADC_function == THROTTLE_CONTROL) &&
+		     (p_configuration_variables->ui8_street_mode_enabled) &&
+		     (!p_configuration_variables->ui8_street_mode_throttle_enabled))
+					ui8_temp = 0;
           
-        break;
+		  // optional ADC function & coaster brake torque threshold
+		  ui8_tx_buffer[7] = ui8_temp |
+							(p_configuration_variables->ui8_coaster_brake_torque_threshold << 2);
+          break;
 
         case 2:
-        
-          // set motor type
-          ui8_tx_buffer[5] = p_configuration_variables->ui8_motor_type;
-          
+          // set motor type & function setting
+          ui8_tx_buffer[5] = p_configuration_variables->ui8_motor_type |
+							(p_configuration_variables->ui8_startup_boost_enabled << 1) |
+							(p_configuration_variables->ui8_torque_sensor_calibration_enabled << 2) |
+							(p_configuration_variables->ui8_assist_whit_error_enabled << 3);
+							// bit free for future use
+							
           // motor over temperature min value limit
           ui8_tx_buffer[6] = p_configuration_variables->ui8_motor_temperature_min_value_to_limit;
           
           // motor over temperature max value limit
           ui8_tx_buffer[7] = p_configuration_variables->ui8_motor_temperature_max_value_to_limit;
-          
-        break;
+          break;
 
         case 3:
-        
-          ui8_tx_buffer[5] = 0;
+		  // pedal torque ADC offset set (weight=0)
+          ui8_tx_buffer[5] = p_configuration_variables->ui8_adc_pedal_torque_offset_set;
           
-          ui8_tx_buffer[6] = 0;
-          
-          ui8_tx_buffer[7] = 0;
-          
-        break;
+		  // pedal torque ADC range (weight=max)
+          ui16_temp = p_configuration_variables->ui16_adc_pedal_torque_range;
+          ui8_tx_buffer[6] = (uint8_t) (ui16_temp & 0xff);
+          ui8_tx_buffer[7] = (uint8_t) (ui16_temp >> 8);
+          break;
 
         case 4:
-          
           // lights configuration
           ui8_tx_buffer[5] = p_configuration_variables->ui8_lights_configuration;
           
@@ -357,11 +320,9 @@ void uart_data_clock (void)
           
           // motor acceleration adjustment
           ui8_tx_buffer[7] = p_configuration_variables->ui8_motor_acceleration;
-
-        break;
+          break;
 
         case 5:
-          
           // pedal torque conversion
           ui8_tx_buffer[5] = p_configuration_variables->ui8_pedal_torque_per_10_bit_ADC_step_x100;
           
@@ -377,26 +338,22 @@ void uart_data_clock (void)
           {
             ui8_tx_buffer[7] = p_configuration_variables->ui8_target_max_battery_power_div25;
           }
-
-        break;
+          break;
         
         case 6:
-        
-          // cadence sensor mode
-          ui8_tx_buffer[5] = p_configuration_variables->ui8_cadence_sensor_mode;
+          // startup boost torque factor
+          ui8_tx_buffer[5] = (uint8_t) (p_configuration_variables->ui16_startup_boost_torque_factor >> 1);
           
-          // cadence sensor pulse high percentage
-          uint16_t ui16_temp = p_configuration_variables->ui16_cadence_sensor_pulse_high_percentage_x10;
-          ui8_tx_buffer[6] = (uint8_t) (ui16_temp & 0xff);
-          ui8_tx_buffer[7] = (uint8_t) (ui16_temp >> 8);
-          
-        break;
+          // startup boost cadence step
+          ui8_tx_buffer[6] = p_configuration_variables->ui8_startup_boost_cadence_step;
+		  
+		  // Free for future use
+          ui8_tx_buffer[7] = 0;
+          break;
         
         default:
-          
           ui8_message_ID = 0;
-        
-        break;
+          break;
       }
 
       // prepare crc of the package

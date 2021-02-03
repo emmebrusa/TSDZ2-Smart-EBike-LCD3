@@ -11,6 +11,7 @@
 
 #include "stm8s.h"
 #include "stm8s_uart2.h"
+#include "main.h"
 #include "interrupts.h"
 
 
@@ -25,8 +26,42 @@ void uart2_init(void) {
             UART2_MODE_TXRX_ENABLE);
 
     UART2_ITConfig(UART2_IT_RXNE_OR, ENABLE);
+} 
 
-    // Set UART2 TX IRQ priority to level 1 :0=lowest - 3=highest(default value)
-    ITC_SetSoftwarePriority(UART2_TX_IRQHANDLER, ITC_PRIORITYLEVEL_1);
-    ITC_SetSoftwarePriority(UART2_RX_IRQHANDLER, ITC_PRIORITYLEVEL_2);
+#if __SDCC_REVISION < 9624
+void putchar(char c)
+{
+  //Write a character to the UART2
+  UART2_SendData8(c);
+
+  //Loop until the end of transmission
+  while (UART2_GetFlagStatus(UART2_FLAG_TXE) == RESET);
+}
+#else
+int putchar(int c)
+{
+  //Write a character to the UART2
+  UART2_SendData8(c);
+
+  //Loop until the end of transmission
+  while (UART2_GetFlagStatus(UART2_FLAG_TXE) == RESET);
+
+  return((unsigned char)c);
+}
+#endif
+
+#if __SDCC_REVISION < 9989
+char getchar(void)
+#else
+int getchar(void)
+#endif
+{
+  uint8_t c = 0;
+
+  /* Loop until the Read data register flag is SET */
+  while (UART2_GetFlagStatus(UART2_FLAG_RXNE) == RESET) ;
+
+  c = UART2_ReceiveData8();
+
+  return (c);
 }

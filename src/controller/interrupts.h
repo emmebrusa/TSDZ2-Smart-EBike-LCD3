@@ -16,8 +16,7 @@
 #define EXTI_PORTE_IRQHANDLER 7             // Not used
 #define TIM1_CAP_COM_IRQHANDLER 	12      // Motor control loop (64us)
 #define TIM2_UPD_OVF_TRG_BRK_IRQHANDLER 13  // Not used
-#define UART2_RX_IRQHANDLER 21              // UART Data received
-#define UART2_TX_IRQHANDLER 20              // UART Data sent
+#define UART2_IRQHANDLER 21              	// UART
 #define ADC1_IRQHANDLER 22                  // ADC1 End Of Conversion (not used)
 
 #endif

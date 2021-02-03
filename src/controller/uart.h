@@ -13,5 +13,17 @@
 
 void uart2_init(void);
 
+#if __SDCC_REVISION < 9624
+void putchar(char c);
+#else
+int putchar(int c);
+#endif
+
+#if __SDCC_REVISION < 9989
+char getchar(void);
+#else
+int getchar(void);
+#endif
+
 #endif /* _UART_H */
 

@@ -1,7 +1,7 @@
 /*
  * LCD3 firmware
  *
- * Copyright (C) Casainho, 2018.
+ * Copyright (C) Casainho and Leon, 2019.
  *
  * Released under the GPL License, Version 3
  */
@@ -12,6 +12,7 @@
 #include "stm8s_flash.h"
 #include "main.h"
 #include "lcd.h"
+#include "common.h"
 
 static const uint8_t ui8_default_array[EEPROM_BYTES_STORED] = 
 {
@@ -22,14 +23,14 @@ static const uint8_t ui8_default_array[EEPROM_BYTES_STORED] =
   DEFAULT_VALUE_WHEEL_PERIMETER_1,                                    // 4
   DEFAULT_VALUE_WHEEL_MAX_SPEED,                                      // 5
   DEFAULT_VALUE_UNITS_TYPE,                                           // 6
-  DEFAULT_VALUE_WH_OFFSET,                                            // 7
-  DEFAULT_VALUE_WH_OFFSET,                                            // 8
-  DEFAULT_VALUE_WH_OFFSET,                                            // 9
-  DEFAULT_VALUE_WH_OFFSET,                                            // 10
-  DEFAULT_VALUE_HW_X10_100_PERCENT,                                   // 11
-  DEFAULT_VALUE_HW_X10_100_PERCENT,                                   // 12
-  DEFAULT_VALUE_HW_X10_100_PERCENT,                                   // 13
-  DEFAULT_VALUE_HW_X10_100_PERCENT,                                   // 14
+  DEFAULT_VALUE_WH_OFFSET_0,                                          // 7
+  DEFAULT_VALUE_WH_OFFSET_1,                                          // 8
+  DEFAULT_VALUE_WH_OFFSET_2,                                          // 9
+  DEFAULT_VALUE_WH_OFFSET_3,                                          // 10
+  DEFAULT_VALUE_HW_X10_100_PERCENT_0,                                 // 11
+  DEFAULT_VALUE_HW_X10_100_PERCENT_1,                                 // 12
+  DEFAULT_VALUE_HW_X10_100_PERCENT_2,                                 // 13
+  DEFAULT_VALUE_HW_X10_100_PERCENT_3,                                 // 14
   DEFAULT_VALUE_BATTERY_SOC_FUNCTION_ENABLED,                         // 15
   DEFAULT_VALUE_ODOMETER_FIELD_STATE,                                 // 16
   DEFAULT_VALUE_BATTERY_MAX_CURRENT,                                  // 17
@@ -38,7 +39,8 @@ static const uint8_t ui8_default_array[EEPROM_BYTES_STORED] =
   DEFAULT_VALUE_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_0,                    // 20
   DEFAULT_VALUE_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_1,                    // 21
   DEFAULT_VALUE_MOTOR_TYPE,                                           // 22
-  DEFAULT_VALUE_POWER_ASSIST_FUNCTION_ENABLED,                        // 23
+  //DEFAULT_VALUE_POWER_ASSIST_FUNCTION_ENABLED,                        // 23
+  DEFAULT_STARTUP_BOOST_ENABLED,                        			  // 23
   DEFAULT_VALUE_POWER_ASSIST_LEVEL_1,                                 // 24
   DEFAULT_VALUE_POWER_ASSIST_LEVEL_2,                                 // 25
   DEFAULT_VALUE_POWER_ASSIST_LEVEL_3,                                 // 26
@@ -109,7 +111,8 @@ static const uint8_t ui8_default_array[EEPROM_BYTES_STORED] =
   DEFAULT_VALUE_SHOW_MOTOR_TEMPERATURE_ODOMETER_FIELD,                // 91
   DEFAULT_VALUE_SHOW_BATTERY_SOC_ODOMETER_FIELD,                      // 92
   DEFAULT_VALUE_MAIN_SCREEN_POWER_MENU_ENABLED,                       // 93
-  DEFAULT_VALUE_TORQUE_ASSIST_FUNCTION_ENABLED,                       // 94
+  //DEFAULT_VALUE_TORQUE_ASSIST_FUNCTION_ENABLED,                       // 94
+  DEFAULT_TORQUE_SENSOR_CALIBRATION_ENABLED,                          // 94
   DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_1,                                // 95
   DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_2,                                // 96
   DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_3,                                // 97
@@ -119,7 +122,8 @@ static const uint8_t ui8_default_array[EEPROM_BYTES_STORED] =
   DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_7,                                // 101
   DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_8,                                // 102
   DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_9,                                // 103
-  DEFAULT_VALUE_CADENCE_ASSIST_FUNCTION_ENABLED,                      // 104
+  //DEFAULT_VALUE_CADENCE_ASSIST_FUNCTION_ENABLED,                      // 104
+  DEFAULT_ASSISTANCE_WITH_ERROR_ENABLED,                      		  // 104
   DEFAULT_VALUE_CADENCE_ASSIST_LEVEL_1,                               // 105
   DEFAULT_VALUE_CADENCE_ASSIST_LEVEL_2,                               // 106
   DEFAULT_VALUE_CADENCE_ASSIST_LEVEL_3,                               // 107
@@ -129,20 +133,39 @@ static const uint8_t ui8_default_array[EEPROM_BYTES_STORED] =
   DEFAULT_VALUE_CADENCE_ASSIST_LEVEL_7,                               // 111
   DEFAULT_VALUE_CADENCE_ASSIST_LEVEL_8,                               // 112
   DEFAULT_VALUE_CADENCE_ASSIST_LEVEL_9,                               // 113
-  DEFAULT_VALUE_CADENCE_SENSOR_MODE,                                  // 114
+  //DEFAULT_VALUE_CADENCE_SENSOR_MODE,                                  // 114
+  DEFAULT_VALUE_COASTER_BRAKE_TORQUE_THRESHOLD,                       // 114
   DEFAULT_VALUE_EMTB_ASSIST_FUNCTION_ENABLED,                         // 115
-  DEFAULT_VALUE_EMTB_ASSIST_SENSITIVITY,                              // 116
-  DEFAULT_VALUE_PEDAL_TORQUE_PER_10_BIT_ADC_STEP_X100,                // 117
-  DEFAULT_VALUE_TEMPERATURE_FIELD_STATE,                              // 118
-  DEFAULT_VALUE_CADENCE_SENSOR_PULSE_HIGH_PERCENTAGE_X10_0,           // 119
-  DEFAULT_VALUE_CADENCE_SENSOR_PULSE_HIGH_PERCENTAGE_X10_1,           // 120
-  DEFAULT_VALUE_LIGHTS_MODE,                                          // 121
-  DEFAULT_VALUE_LIGHTS_STATE,                                         // 122
-  DEFAULT_VALUE_ASSIST_WITHOUT_PEDAL_ROTATION_THRESHOLD,              // 123
-  DEFAULT_VALUE_LIGHTS_CONFIGURATION,                                 // 124
-  DEFAULT_VALUE_WALK_ASSIST_BUTTON_BOUNCE_TIME                        // 125
+  //DEFAULT_VALUE_EMTB_ASSIST_SENSITIVITY,                              // 116
+  DEFAULT_VALUE_PEDAL_TORQUE_PER_10_BIT_ADC_STEP_X100,                // 116
+  DEFAULT_VALUE_TEMPERATURE_FIELD_STATE,                              // 117
+  //DEFAULT_VALUE_CADENCE_SENSOR_PULSE_HIGH_PERCENTAGE_X10_0,           // 119
+  //DEFAULT_VALUE_CADENCE_SENSOR_PULSE_HIGH_PERCENTAGE_X10_1,           // 120
+  DEFAULT_VALUE_LIGHTS_MODE,                                          // 118
+  DEFAULT_VALUE_LIGHTS_STATE,                                         // 119
+  DEFAULT_VALUE_ASSIST_WITHOUT_PEDAL_ROTATION_THRESHOLD,              // 120
+  DEFAULT_VALUE_LIGHTS_CONFIGURATION,                                 // 121
+  DEFAULT_VALUE_WALK_ASSIST_BUTTON_BOUNCE_TIME,                       // 121
+  DEFAULT_VALUE_PEDAL_TORQUE_ADC_OFFSET,		                      // 123
+  DEFAULT_VALUE_PEDAL_TORQUE_ADC_RANGE_0,		              		  // 124
+  DEFAULT_VALUE_PEDAL_TORQUE_ADC_RANGE_1,							  // 125
+  DEFAULT_VALUE_STARTUP_BOOST_TORQUE_FACTOR_0,						  // 126
+  DEFAULT_VALUE_STARTUP_BOOST_TORQUE_FACTOR_1,						  // 127
+  DEFAULT_VALUE_STARTUP_BOOST_CADENCE_STEP,							  // 128
+  DEFAULT_VALUE_RIDING_MODE_ON_STARTUP,								  // 129
+  DEFAULT_VALUE_EMTB_ASSIST_LEVEL_1,                               	  // 130
+  DEFAULT_VALUE_EMTB_ASSIST_LEVEL_2,                                  // 131
+  DEFAULT_VALUE_EMTB_ASSIST_LEVEL_3,                                  // 132
+  DEFAULT_VALUE_EMTB_ASSIST_LEVEL_4,                                  // 133
+  DEFAULT_VALUE_EMTB_ASSIST_LEVEL_5,                                  // 134
+  DEFAULT_VALUE_EMTB_ASSIST_LEVEL_6,                                  // 135
+  DEFAULT_VALUE_EMTB_ASSIST_LEVEL_7,                                  // 136
+  DEFAULT_VALUE_EMTB_ASSIST_LEVEL_8,                                  // 137
+  DEFAULT_VALUE_EMTB_ASSIST_LEVEL_9,                                  // 138
+  DEFAULT_VALUE_EMTB_ASSIST_LEVEL_10                                  // 139
 };
 
+static uint8_t ui8_error_number = 0;
 
 void EEPROM_init(void)
 {
@@ -220,10 +243,18 @@ void EEPROM_controller(uint8_t ui8_operation)
         while (FLASH_GetFlagStatus(FLASH_FLAG_EOP) == RESET) {}
         
         // read value from EEPROM for validation
-        volatile uint8_t ui8_saved_default_value = FLASH_ReadByte(ui32_default_address);
+        uint8_t ui8_saved_default_value = FLASH_ReadByte(ui32_default_address);
         
         // if write was not successful, rewrite
-        if (ui8_saved_default_value != ui8_default_variable_value) { ui8_i = EEPROM_BYTES_STORED; }
+		if (ui8_saved_default_value != ui8_default_variable_value)
+		{
+			// limit errors number
+			ui8_error_number += 1;
+			if(ui8_error_number > 3)
+				ui8_error_write_eeprom = ERROR_WRITE_EEPROM;
+			else
+				ui8_i = EEPROM_BYTES_STORED;
+		}
       }
       
     break;
@@ -252,21 +283,21 @@ void EEPROM_controller(uint8_t ui8_operation)
       p_configuration_variables->ui8_number_of_assist_levels = ui8_array[ADDRESS_NUMBER_OF_ASSIST_LEVELS];
       
       // power assist
-      p_configuration_variables->ui8_power_assist_function_enabled = ui8_array[ADDRESS_POWER_ASSIST_FUNCTION_ENABLED];
+      p_configuration_variables->ui8_startup_boost_enabled = ui8_array[ADDRESS_STARTUP_BOOST_ENABLED];
       for (ui8_i = 0; ui8_i < 9; ui8_i++)
       {
         p_configuration_variables->ui8_power_assist_level[ui8_i] = ui8_array[ADDRESS_POWER_ASSIST_LEVEL_1 + ui8_i];
       }
       
       // torque assist
-      p_configuration_variables->ui8_torque_assist_function_enabled = ui8_array[ADDRESS_TORQUE_ASSIST_FUNCTION_ENABLED];
+      p_configuration_variables->ui8_torque_sensor_calibration_enabled = ui8_array[ADDRESS_TORQUE_SENSOR_CALIBRATION_ENABLED];
       for (ui8_i = 0; ui8_i < 9; ui8_i++)
       {
         p_configuration_variables->ui8_torque_assist_level[ui8_i] = ui8_array[ADDRESS_TORQUE_ASSIST_LEVEL_1 + ui8_i];
       }
       
       // cadence assist
-      p_configuration_variables->ui8_cadence_assist_function_enabled = ui8_array[ADDRESS_CADENCE_ASSIST_FUNCTION_ENABLED];
+      p_configuration_variables->ui8_assist_whit_error_enabled = ui8_array[ADDRESS_ASSISTANCE_WITH_ERROR_ENABLED];
       for (ui8_i = 0; ui8_i < 9; ui8_i++)
       {
         p_configuration_variables->ui8_cadence_assist_level[ui8_i] = ui8_array[ADDRESS_CADENCE_ASSIST_LEVEL_1 + ui8_i];
@@ -274,8 +305,12 @@ void EEPROM_controller(uint8_t ui8_operation)
       
       // eMTB assist
       p_configuration_variables->ui8_eMTB_assist_function_enabled = ui8_array[ADDRESS_EMTB_ASSIST_FUNCTION_ENABLED];
-      p_configuration_variables->ui8_eMTB_assist_sensitivity = ui8_array[ADDRESS_EMTB_ASSIST_SENSITIVITY];
-      
+      //p_configuration_variables->ui8_eMTB_assist_sensitivity = ui8_array[ADDRESS_EMTB_ASSIST_SENSITIVITY];
+      for (ui8_i = 0; ui8_i < 10; ui8_i++)
+      {
+        p_configuration_variables->ui8_eMTB_assist_level[ui8_i] = ui8_array[ADDRESS_EMTB_ASSIST_LEVEL_1 + ui8_i];
+      }
+	  
       // walk assist
       p_configuration_variables->ui8_walk_assist_function_enabled = ui8_array[ADDRESS_WALK_ASSIST_FUNCTION_ENABLED];
       for (ui8_i = 0; ui8_i < 9; ui8_i++)
@@ -429,17 +464,41 @@ void EEPROM_controller(uint8_t ui8_operation)
       // main screen power menu enable 
       p_configuration_variables->ui8_main_screen_power_menu_enabled = ui8_array[ADDRESS_MAIN_SCREEN_POWER_MENU_ENABLED];
       
-      
       // pedal torque conversion
       p_configuration_variables->ui8_pedal_torque_per_10_bit_ADC_step_x100 = ui8_array[ADDRESS_PEDAL_TORQUE_PER_10_BIT_ADC_STEP_X100];
+	  
+	  
+      // pedal torque ADC offset set (weight=0)
+      p_configuration_variables->ui8_adc_pedal_torque_offset_set = ui8_array[ADDRESS_PEDAL_TORQUE_ADC_OFFSET];
       
-      
-      // cadence sensor mode
-      p_configuration_variables->ui8_cadence_sensor_mode = ui8_array[ADDRESS_CADENCE_SENSOR_MODE];
-      ui16_temp = ui8_array[ADDRESS_CADENCE_SENSOR_PULSE_HIGH_PERCENTAGE_X10_0];
-      ui8_temp = ui8_array[ADDRESS_CADENCE_SENSOR_PULSE_HIGH_PERCENTAGE_X10_1];
+	  // pedal torque ADC range (weight=max)
+	  ui16_temp = ui8_array[ADDRESS_PEDAL_TORQUE_ADC_RANGE_0];
+      ui8_temp = ui8_array[ADDRESS_PEDAL_TORQUE_ADC_RANGE_1];
       ui16_temp += (((uint16_t) ui8_temp << 8) & 0xff00);
-      p_configuration_variables->ui16_cadence_sensor_pulse_high_percentage_x10 = ui16_temp;
+      p_configuration_variables->ui16_adc_pedal_torque_range = ui16_temp;      
+      
+	  // startup boost torque factor
+	  ui16_temp = ui8_array[ADDRESS_STARTUP_BOOST_TORQUE_FACTOR_0];
+      ui8_temp = ui8_array[ADDRESS_STARTUP_BOOST_TORQUE_FACTOR_1];
+      ui16_temp += (((uint16_t) ui8_temp << 8) & 0xff00);
+      p_configuration_variables->ui16_startup_boost_torque_factor = ui16_temp; 
+	  
+      // startup boost cadence step
+      p_configuration_variables->ui8_startup_boost_cadence_step = ui8_array[ADDRESS_STARTUP_BOOST_CADENCE_STEP];
+      
+      // coaster brake torque threshold
+      p_configuration_variables->ui8_coaster_brake_torque_threshold = ui8_array[ADDRESS_COASTER_BRAKE_TORQUE_THRESHOLD];
+      
+	  // riding mode on startup
+      p_configuration_variables->ui8_riding_mode = ui8_array[ADDRESS_RIDING_MODE_ON_STARTUP];
+      
+	  
+      // cadence sensor mode
+      //p_configuration_variables->ui8_cadence_sensor_mode = ui8_array[ADDRESS_CADENCE_SENSOR_MODE];
+      //ui16_temp = ui8_array[ADDRESS_CADENCE_SENSOR_PULSE_HIGH_PERCENTAGE_X10_0];
+      //ui8_temp = ui8_array[ADDRESS_CADENCE_SENSOR_PULSE_HIGH_PERCENTAGE_X10_1];
+      //ui16_temp += (((uint16_t) ui8_temp << 8) & 0xff00);
+      //p_configuration_variables->ui16_cadence_sensor_pulse_high_percentage_x10 = ui16_temp;
       
       
       // assist without pedal rotation threshold
@@ -492,21 +551,21 @@ void EEPROM_controller(uint8_t ui8_operation)
       ui8_array[ADDRESS_NUMBER_OF_ASSIST_LEVELS] = p_configuration_variables->ui8_number_of_assist_levels;
       
       // power assist
-      ui8_array[ADDRESS_POWER_ASSIST_FUNCTION_ENABLED] = p_configuration_variables->ui8_power_assist_function_enabled;
+      ui8_array[ADDRESS_STARTUP_BOOST_ENABLED] = p_configuration_variables->ui8_startup_boost_enabled;
       for (ui8_i = 0; ui8_i < 9; ui8_i++)
       {
         ui8_array[ADDRESS_POWER_ASSIST_LEVEL_1 + ui8_i] = p_configuration_variables->ui8_power_assist_level[ui8_i];
       }
       
       // torque assist
-      ui8_array[ADDRESS_TORQUE_ASSIST_FUNCTION_ENABLED] = p_configuration_variables->ui8_torque_assist_function_enabled;
+      ui8_array[ADDRESS_TORQUE_SENSOR_CALIBRATION_ENABLED] = p_configuration_variables->ui8_torque_sensor_calibration_enabled;
       for (ui8_i = 0; ui8_i < 9; ui8_i++)
       {
         ui8_array[ADDRESS_TORQUE_ASSIST_LEVEL_1 + ui8_i] = p_configuration_variables->ui8_torque_assist_level[ui8_i];
       }
       
       // cadence assist
-      ui8_array[ADDRESS_CADENCE_ASSIST_FUNCTION_ENABLED] = p_configuration_variables->ui8_cadence_assist_function_enabled;
+      ui8_array[ADDRESS_ASSISTANCE_WITH_ERROR_ENABLED] = p_configuration_variables->ui8_assist_whit_error_enabled;
       for (ui8_i = 0; ui8_i < 9; ui8_i++)
       {
         ui8_array[ADDRESS_CADENCE_ASSIST_LEVEL_1 + ui8_i] = p_configuration_variables->ui8_cadence_assist_level[ui8_i];
@@ -514,8 +573,12 @@ void EEPROM_controller(uint8_t ui8_operation)
       
       // eMTB assist function variables
       ui8_array[ADDRESS_EMTB_ASSIST_FUNCTION_ENABLED] = p_configuration_variables->ui8_eMTB_assist_function_enabled;
-      ui8_array[ADDRESS_EMTB_ASSIST_SENSITIVITY] = p_configuration_variables->ui8_eMTB_assist_sensitivity;
-      
+      //ui8_array[ADDRESS_EMTB_ASSIST_SENSITIVITY] = p_configuration_variables->ui8_eMTB_assist_sensitivity;
+            for (ui8_i = 0; ui8_i < 10; ui8_i++)
+      {
+        ui8_array[ADDRESS_EMTB_ASSIST_LEVEL_1 + ui8_i] = p_configuration_variables->ui8_eMTB_assist_level[ui8_i];
+      }
+	  
       // walk assist
       ui8_array[ADDRESS_WALK_ASSIST_FUNCTION_ENABLED] = p_configuration_variables->ui8_walk_assist_function_enabled;
       for (ui8_i = 0; ui8_i < 9; ui8_i++)
@@ -620,11 +683,33 @@ void EEPROM_controller(uint8_t ui8_operation)
 
       // pedal torque conversion
       ui8_array[ADDRESS_PEDAL_TORQUE_PER_10_BIT_ADC_STEP_X100] = p_configuration_variables->ui8_pedal_torque_per_10_bit_ADC_step_x100;
+
+	  
+      // pedal torque ADC offset set (weight=0)
+      ui8_array[ADDRESS_PEDAL_TORQUE_ADC_OFFSET] = p_configuration_variables->ui8_adc_pedal_torque_offset_set;
       
+      // pedal torque ADC range (weight=max)
+      ui8_array[ADDRESS_PEDAL_TORQUE_ADC_RANGE_0] = p_configuration_variables->ui16_adc_pedal_torque_range & 255;
+      ui8_array[ADDRESS_PEDAL_TORQUE_ADC_RANGE_1] = (p_configuration_variables->ui16_adc_pedal_torque_range >> 8) & 255;
+	  
+	  // startup boost torque factor
+      ui8_array[ADDRESS_STARTUP_BOOST_TORQUE_FACTOR_0] = p_configuration_variables->ui16_startup_boost_torque_factor & 255;
+      ui8_array[ADDRESS_STARTUP_BOOST_TORQUE_FACTOR_1] = (p_configuration_variables->ui16_startup_boost_torque_factor >> 8) & 255;
+	  
+	  // startup boost cadence step
+      ui8_array[ADDRESS_STARTUP_BOOST_CADENCE_STEP] = p_configuration_variables->ui8_startup_boost_cadence_step;
+	  
+	  // startup boost cadence step
+      ui8_array[ADDRESS_COASTER_BRAKE_TORQUE_THRESHOLD] = p_configuration_variables->ui8_coaster_brake_torque_threshold;
+      
+	  // riding mode on startup
+      ui8_array[ADDRESS_RIDING_MODE_ON_STARTUP] = p_configuration_variables->ui8_riding_mode;
+      
+	  
       // cadence sensor mode
-      ui8_array[ADDRESS_CADENCE_SENSOR_MODE] = p_configuration_variables->ui8_cadence_sensor_mode;
-      ui8_array[ADDRESS_CADENCE_SENSOR_PULSE_HIGH_PERCENTAGE_X10_0] = p_configuration_variables->ui16_cadence_sensor_pulse_high_percentage_x10 & 255;
-      ui8_array[ADDRESS_CADENCE_SENSOR_PULSE_HIGH_PERCENTAGE_X10_1] = (p_configuration_variables->ui16_cadence_sensor_pulse_high_percentage_x10 >> 8) & 255;
+      //ui8_array[ADDRESS_CADENCE_SENSOR_MODE] = p_configuration_variables->ui8_cadence_sensor_mode;
+      //ui8_array[ADDRESS_CADENCE_SENSOR_PULSE_HIGH_PERCENTAGE_X10_0] = p_configuration_variables->ui16_cadence_sensor_pulse_high_percentage_x10 & 255;
+      //ui8_array[ADDRESS_CADENCE_SENSOR_PULSE_HIGH_PERCENTAGE_X10_1] = (p_configuration_variables->ui16_cadence_sensor_pulse_high_percentage_x10 >> 8) & 255;
       
       // assist without pedal rotation threshold
       ui8_array[ADDRESS_ASSIST_WITHOUT_PEDAL_ROTATION_THRESHOLD] = p_configuration_variables->ui8_assist_without_pedal_rotation_threshold;
@@ -653,10 +738,18 @@ void EEPROM_controller(uint8_t ui8_operation)
         while (FLASH_GetFlagStatus(FLASH_FLAG_EOP) == RESET) {}
         
         // read value from EEPROM for validation
-        volatile uint8_t ui8_saved_value = FLASH_ReadByte(ui32_address);
+        uint8_t ui8_saved_value = FLASH_ReadByte(ui32_address);
         
         // if write was not successful, rewrite
-        if (ui8_saved_value != ui8_variable_value) { ui8_i = EEPROM_BYTES_STORED; }
+		if (ui8_saved_value != ui8_variable_value)
+		{
+			// limit errors number
+			ui8_error_number += 1;
+			if(ui8_error_number > 3)
+				ui8_error_write_eeprom = ERROR_WRITE_EEPROM;
+			else
+				ui8_i = EEPROM_BYTES_STORED;
+		}
       }
       
     break;
