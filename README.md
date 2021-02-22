@@ -13,7 +13,7 @@ It has the following benefits compared to the stock firmware:
 This project is being developed and maintained for free by a community of users. Some of them are developers who work professionally developing this type of technology for very well known companies.
 
 For more details, see the project page: https://github.com/OpenSource-EBike-firmware/TSDZ2_wiki/wiki 
-
+Manuals https://github.com/OpenSourceEBike/TSDZ2_wiki/wiki/0.20.0-(DEVELOPMENT)-%7C-KT-LCD3-%7C-TSDZ2-%7C-Manual#Configuration_Menu
 **IMPORTANT NOTES**
 * Installing this firmware will void your warranty of the TSDZ2 mid drive and KT-LCD3.
 * We are not responsible for any personal injuries or accidents caused by use of this firmware.
