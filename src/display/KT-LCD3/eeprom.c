@@ -162,7 +162,8 @@ static const uint8_t ui8_default_array[EEPROM_BYTES_STORED] =
   DEFAULT_VALUE_EMTB_ASSIST_LEVEL_7,                                  // 136
   DEFAULT_VALUE_EMTB_ASSIST_LEVEL_8,                                  // 137
   DEFAULT_VALUE_EMTB_ASSIST_LEVEL_9,                                  // 138
-  DEFAULT_VALUE_EMTB_ASSIST_LEVEL_10                                  // 139
+  DEFAULT_VALUE_EMTB_ASSIST_LEVEL_10,	                              // 139
+  DEFAULT_VALUE_ADC_10_BIT_BATTERY_CURRENT_MIN						  // 140
 };
 
 static uint8_t ui8_error_number = 0;
@@ -503,7 +504,7 @@ void EEPROM_controller(uint8_t ui8_operation)
       
       // assist without pedal rotation threshold
       p_configuration_variables->ui8_assist_without_pedal_rotation_threshold = ui8_array[ADDRESS_ASSIST_WITHOUT_PEDAL_ROTATION_THRESHOLD];
-      
+      p_configuration_variables->ui8_adc_battery_current_min = ui8_array[ADDRESS_ADC_10_BIT_BATTERY_CURRENT_MIN];
       
       // lights
       p_configuration_variables->ui8_light_mode = ui8_array[ADDRESS_LIGHTS_MODE];
@@ -713,7 +714,8 @@ void EEPROM_controller(uint8_t ui8_operation)
       
       // assist without pedal rotation threshold
       ui8_array[ADDRESS_ASSIST_WITHOUT_PEDAL_ROTATION_THRESHOLD] = p_configuration_variables->ui8_assist_without_pedal_rotation_threshold;
-      
+      ui8_array[ADDRESS_ADC_10_BIT_BATTERY_CURRENT_MIN] = p_configuration_variables->ui8_adc_battery_current_min;
+	  
       // lights
       ui8_array[ADDRESS_LIGHTS_MODE] = p_configuration_variables->ui8_light_mode;
       ui8_array[ADDRESS_LIGHTS_STATE] = p_configuration_variables->ui8_lights_state;

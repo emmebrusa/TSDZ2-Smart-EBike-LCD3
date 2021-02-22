@@ -132,6 +132,7 @@ typedef struct _configuration_variables
   uint8_t ui8_torque_sensor_calibration_enabled;
   uint8_t ui8_assist_whit_error_enabled;
   uint8_t ui8_riding_mode;
+  uint8_t ui8_adc_battery_current_min;
 } struct_configuration_variables;
 
 

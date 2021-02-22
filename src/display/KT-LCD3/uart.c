@@ -291,8 +291,9 @@ void uart_data_clock (void)
           ui8_tx_buffer[5] = p_configuration_variables->ui8_motor_type |
 							(p_configuration_variables->ui8_startup_boost_enabled << 1) |
 							(p_configuration_variables->ui8_torque_sensor_calibration_enabled << 2) |
-							(p_configuration_variables->ui8_assist_whit_error_enabled << 3);
-							// bit free for future use
+							(p_configuration_variables->ui8_assist_whit_error_enabled << 3) |
+							// << 4; // available 
+							(p_configuration_variables->ui8_adc_battery_current_min << 5);
 							
           // motor over temperature min value limit
           ui8_tx_buffer[6] = p_configuration_variables->ui8_motor_temperature_min_value_to_limit;

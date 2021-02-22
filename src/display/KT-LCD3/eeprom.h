@@ -160,10 +160,11 @@
 #define ADDRESS_EMTB_ASSIST_LEVEL_8                                      	137
 #define ADDRESS_EMTB_ASSIST_LEVEL_9                                      	138
 #define ADDRESS_EMTB_ASSIST_LEVEL_10	                                    139
-#define EEPROM_BYTES_STORED                                                 140
+#define ADDRESS_ADC_10_BIT_BATTERY_CURRENT_MIN								140
+#define EEPROM_BYTES_STORED                                                 141
 
 
-#define DEFAULT_VALUE_KEY     203
+#define DEFAULT_VALUE_KEY     204
 #define SET_TO_DEFAULT        0
 #define READ_FROM_MEMORY      1
 #define WRITE_TO_MEMORY       2

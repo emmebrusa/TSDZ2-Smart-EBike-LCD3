@@ -81,7 +81,7 @@
 // default values for power assist
 //#define DEFAULT_VALUE_POWER_ASSIST_FUNCTION_ENABLED                 1
 // default set startup boost enabled
-#define DEFAULT_STARTUP_BOOST_ENABLED								0
+#define DEFAULT_STARTUP_BOOST_ENABLED								1
 // default values for power assist
 //#define DEFAULT_VALUE_POWER_ASSIST_LEVEL_0                          0   // 0
 #define DEFAULT_VALUE_POWER_ASSIST_LEVEL_1                          25  // MAX 254
@@ -283,7 +283,7 @@
 
 // default value assist without pedal rotation threshold
 #define DEFAULT_VALUE_ASSIST_WITHOUT_PEDAL_ROTATION_THRESHOLD       30
-
+#define DEFAULT_VALUE_ADC_10_BIT_BATTERY_CURRENT_MIN				0
 
 
 // default value lights

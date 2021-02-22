@@ -584,7 +584,7 @@ static void apply_power_assist()
         ui8_adc_battery_current_target = ui16_adc_battery_current_target;
     }
 	
-	if((ui8_assist_without_pedal_rotation_enabled)&&
+	if((ui8_adc_battery_current_min)&&
 	   (ui8_pedal_cadence_RPM)&&(!ui8_adc_battery_current_target)) {
 			ui8_adc_battery_current_target = ui8_adc_battery_current_min;
 	}
@@ -644,7 +644,7 @@ static void apply_torque_assist()
             ui8_adc_battery_current_target = ui16_adc_battery_current_target_torque_assist;
         }
 
-		if((ui8_assist_without_pedal_rotation_enabled)&&
+		if((ui8_adc_battery_current_min)&&
 	       (ui8_pedal_cadence_RPM)&&(!ui8_adc_battery_current_target)) {
 				ui8_adc_battery_current_target = ui8_adc_battery_current_min;
 		}
@@ -773,7 +773,7 @@ static void apply_emtb_assist()
             ui8_adc_battery_current_target = ui8_adc_battery_current_target_eMTB_assist;
         }
 
-		if((ui8_assist_without_pedal_rotation_enabled)&&
+		if((ui8_adc_battery_current_min)&&
 	       (ui8_pedal_cadence_RPM)&&(!ui8_adc_battery_current_target)) {
 				ui8_adc_battery_current_target = ui8_adc_battery_current_min;
 		}
@@ -974,7 +974,7 @@ static void apply_hybrid_assist()
 	if (ui16_adc_battery_current_target > ui8_adc_battery_current_max) { ui8_adc_battery_current_target = ui8_adc_battery_current_max; }
 	else { ui8_adc_battery_current_target = ui16_adc_battery_current_target; }
 	
-	if((ui8_assist_without_pedal_rotation_enabled)&&
+	if((ui8_adc_battery_current_min)&&
 	   (ui8_pedal_cadence_RPM)&&(!ui8_adc_battery_current_target)) {
 			ui8_adc_battery_current_target = ui8_adc_battery_current_min;
 	}
@@ -1727,7 +1727,8 @@ static void uart_receive_package(void)
 				ui8_startup_boost_enabled = (ui8_temp & 2) >> 1;
 				ui8_torque_sensor_calibration_enabled = (ui8_temp & 4) >> 2;
 				ui8_assist_whit_error_enabled = (ui8_temp & 8) >> 3;
-				// bit free for future use
+				// (ui8_temp & 16) >> 4; available 
+				ui8_adc_battery_current_min = (ui8_temp & 224 ) >> 5;
 				
 				if((ui8_torque_sensor_calibration_enabled != ui8_torque_sensor_calibration_enabled_temp)&&
 				   (toffset_cycle_counter >= TOFFSET_CYCLES)) {

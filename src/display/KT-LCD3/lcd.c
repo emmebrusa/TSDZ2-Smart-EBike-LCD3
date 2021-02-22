@@ -1748,6 +1748,20 @@ void lcd_execute_menu_config_submenu_advanced_setup(void)
     break;
 	
 	case 9:
+      
+      // adc battery current min
+      lcd_var_number.p_var_number = &configuration_variables.ui8_adc_battery_current_min;
+      lcd_var_number.ui8_size = 8;
+      lcd_var_number.ui8_decimal_digit = 0;
+      lcd_var_number.ui32_max_value = 3;
+      lcd_var_number.ui32_min_value = 0;
+      lcd_var_number.ui32_increment_step = 1;
+      lcd_var_number.ui8_odometer_field = ODOMETER_FIELD;
+      lcd_configurations_print_number(&lcd_var_number);
+      
+    break;
+	
+	case 10:
     
       // pedal torque adc offset
       lcd_var_number.p_var_number = &configuration_variables.ui8_adc_pedal_torque_offset_set;
@@ -1761,7 +1775,7 @@ void lcd_execute_menu_config_submenu_advanced_setup(void)
       
     break;
 	
-	case 10:
+	case 11:
     
       // pedal torque adc range
       lcd_var_number.p_var_number = &configuration_variables.ui16_adc_pedal_torque_range;
@@ -1775,7 +1789,7 @@ void lcd_execute_menu_config_submenu_advanced_setup(void)
       
     break;
 	
-	case 11:
+	case 12:
     
       // startup boost torque factor
       lcd_var_number.p_var_number = &configuration_variables.ui16_startup_boost_torque_factor;
@@ -1789,7 +1803,7 @@ void lcd_execute_menu_config_submenu_advanced_setup(void)
       
     break;
 	
-	case 12:
+	case 13:
     
       // startup boost cadence step
       lcd_var_number.p_var_number = &configuration_variables.ui8_startup_boost_cadence_step;
@@ -1810,7 +1824,7 @@ void lcd_execute_menu_config_submenu_advanced_setup(void)
     lcd_print(ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 0);
   }
   
-  submenu_state_controller(12);
+  submenu_state_controller(13);
 }
 
 

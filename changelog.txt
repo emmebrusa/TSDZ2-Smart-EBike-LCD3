@@ -1,4 +1,4 @@
-TSDZ2 Open Source Firmware 20beta1.C for KT-LCD3 display
+TSDZ2 Open Source Firmware v20.1C for KT-LCD3 display
 
 Motor changes
 
@@ -33,7 +33,8 @@ Display Menu
 5.x  added "eMTB assist levels" until 9 + 1
 
 10.4  removed "Cadence sensor mode" standard/advanced, replaced with -> "Coaster brake torque threshold"
-10.9  added "Pedal torque ADC offset"
+10.9  added "Min current ADC step"
+10.10 added "Pedal torque ADC offset"
 10.10 added "Pedal torque ADC max"
 10.11 added "Startup Boost torque factor"
 10.12 added "Startup Boost cadence step"
