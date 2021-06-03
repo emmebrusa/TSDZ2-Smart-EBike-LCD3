@@ -124,7 +124,7 @@ typedef struct _configuration_variables
   uint8_t ui8_main_screen_power_menu_enabled;
 
   uint8_t ui8_adc_pedal_torque_offset_set;
-  uint16_t ui16_adc_pedal_torque_range; 
+  uint16_t ui16_adc_pedal_torque_max; 
   uint16_t ui16_startup_boost_torque_factor;
   uint8_t ui8_startup_boost_cadence_step;
   uint8_t ui8_coaster_brake_torque_threshold;
@@ -132,7 +132,9 @@ typedef struct _configuration_variables
   uint8_t ui8_torque_sensor_calibration_enabled;
   uint8_t ui8_assist_whit_error_enabled;
   uint8_t ui8_riding_mode;
-  uint8_t ui8_adc_battery_current_min;
+  uint8_t ui8_motor_deceleration;
+  uint8_t ui8_pedal_cadence_fast_stop;
+  uint8_t ui8_field_weakening_enabled;
 } struct_configuration_variables;
 
 

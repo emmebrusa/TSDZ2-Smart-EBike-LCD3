@@ -1749,11 +1749,11 @@ void lcd_execute_menu_config_submenu_advanced_setup(void)
 	
 	case 9:
       
-      // adc battery current min
-      lcd_var_number.p_var_number = &configuration_variables.ui8_adc_battery_current_min;
+      // motor deceleration adjustment
+      lcd_var_number.p_var_number = &configuration_variables.ui8_motor_deceleration;
       lcd_var_number.ui8_size = 8;
       lcd_var_number.ui8_decimal_digit = 0;
-      lcd_var_number.ui32_max_value = 3;
+      lcd_var_number.ui32_max_value = 100;
       lcd_var_number.ui32_min_value = 0;
       lcd_var_number.ui32_increment_step = 1;
       lcd_var_number.ui8_odometer_field = ODOMETER_FIELD;
@@ -1778,7 +1778,7 @@ void lcd_execute_menu_config_submenu_advanced_setup(void)
 	case 11:
     
       // pedal torque adc range
-      lcd_var_number.p_var_number = &configuration_variables.ui16_adc_pedal_torque_range;
+      lcd_var_number.p_var_number = &configuration_variables.ui16_adc_pedal_torque_max;
       lcd_var_number.ui8_size = 16;
       lcd_var_number.ui8_decimal_digit = 0;
       lcd_var_number.ui32_max_value = 500;
@@ -1817,6 +1817,20 @@ void lcd_execute_menu_config_submenu_advanced_setup(void)
       
     break;
 	
+    case 14:
+	
+	  // enable/disable field weakening
+      lcd_var_number.p_var_number = &configuration_variables.ui8_field_weakening_enabled;
+      lcd_var_number.ui8_size = 8;
+      lcd_var_number.ui8_decimal_digit = 0;
+      lcd_var_number.ui32_max_value = 1;
+      lcd_var_number.ui32_min_value = 0;
+      lcd_var_number.ui32_increment_step = 1;
+      lcd_var_number.ui8_odometer_field = ODOMETER_FIELD;
+      lcd_configurations_print_number(&lcd_var_number);
+    break;
+	
+	
   }
 
   if (ui8_lcd_menu_flash_state || ui8_lcd_menu_config_submenu_change_variable_enabled)
@@ -1824,7 +1838,7 @@ void lcd_execute_menu_config_submenu_advanced_setup(void)
     lcd_print(ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 0);
   }
   
-  submenu_state_controller(13);
+  submenu_state_controller(14);
 }
 
 
@@ -2121,7 +2135,8 @@ void energy(void)
 
 
   // calculate watt-hours since power on
-  ui32_wh_since_power_on_x10 = ui32_wh_sum_x10 / 36000;
+  //ui32_wh_since_power_on_x10 = ui32_wh_sum_x10 / 36000;
+  ui32_wh_since_power_on_x10 = ui32_wh_sum_x10 / 32400; // 36000 -10% for calibration
   
   // calculate watt-hours since last full charge
   ui32_wh_x10 = configuration_variables.ui32_wh_x10_offset + ui32_wh_since_power_on_x10;

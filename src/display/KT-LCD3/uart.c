@@ -287,13 +287,20 @@ void uart_data_clock (void)
           break;
 
         case 2:
+		  // pedal cadence fast stop
+		  if(p_configuration_variables->ui8_motor_deceleration == 100)
+			  p_configuration_variables->ui8_pedal_cadence_fast_stop = 1;
+		  else
+			  p_configuration_variables->ui8_pedal_cadence_fast_stop = 0;
+		  
           // set motor type & function setting
           ui8_tx_buffer[5] = p_configuration_variables->ui8_motor_type |
 							(p_configuration_variables->ui8_startup_boost_enabled << 1) |
 							(p_configuration_variables->ui8_torque_sensor_calibration_enabled << 2) |
 							(p_configuration_variables->ui8_assist_whit_error_enabled << 3) |
-							// << 4; // available 
-							(p_configuration_variables->ui8_adc_battery_current_min << 5);
+							(p_configuration_variables->ui8_pedal_cadence_fast_stop << 4) |
+							(p_configuration_variables->ui8_field_weakening_enabled << 5) |
+							(!p_configuration_variables->ui8_assist_level << 6);
 							
           // motor over temperature min value limit
           ui8_tx_buffer[6] = p_configuration_variables->ui8_motor_temperature_min_value_to_limit;
@@ -307,7 +314,7 @@ void uart_data_clock (void)
           ui8_tx_buffer[5] = p_configuration_variables->ui8_adc_pedal_torque_offset_set;
           
 		  // pedal torque ADC range (weight=max)
-          ui16_temp = p_configuration_variables->ui16_adc_pedal_torque_range;
+          ui16_temp = p_configuration_variables->ui16_adc_pedal_torque_max - p_configuration_variables->ui8_adc_pedal_torque_offset_set;
           ui8_tx_buffer[6] = (uint8_t) (ui16_temp & 0xff);
           ui8_tx_buffer[7] = (uint8_t) (ui16_temp >> 8);
           break;
@@ -348,8 +355,8 @@ void uart_data_clock (void)
           // startup boost cadence step
           ui8_tx_buffer[6] = p_configuration_variables->ui8_startup_boost_cadence_step;
 		  
-		  // Free for future use
-          ui8_tx_buffer[7] = 0;
+		  // motor deceleration adjustment
+          ui8_tx_buffer[7] = p_configuration_variables->ui8_motor_deceleration;
           break;
         
         default:

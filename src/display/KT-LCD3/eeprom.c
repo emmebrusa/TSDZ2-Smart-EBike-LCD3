@@ -163,7 +163,8 @@ static const uint8_t ui8_default_array[EEPROM_BYTES_STORED] =
   DEFAULT_VALUE_EMTB_ASSIST_LEVEL_8,                                  // 137
   DEFAULT_VALUE_EMTB_ASSIST_LEVEL_9,                                  // 138
   DEFAULT_VALUE_EMTB_ASSIST_LEVEL_10,	                              // 139
-  DEFAULT_VALUE_ADC_10_BIT_BATTERY_CURRENT_MIN						  // 140
+  DEFAULT_VALUE_MOTOR_DECELERATION,                                   // 140
+  DEFAULT_VALUE_FIELD_WEAKENING_ENABLED											  // 141
 };
 
 static uint8_t ui8_error_number = 0;
@@ -446,7 +447,10 @@ void EEPROM_controller(uint8_t ui8_operation)
       // motor acceleration
       p_configuration_variables->ui8_motor_acceleration = ui8_array[ADDRESS_MOTOR_ACCELERATION];
       
-      
+      // motor deceleration
+      p_configuration_variables->ui8_motor_deceleration = ui8_array[ADDRESS_MOTOR_DECELERATION];
+	  
+	  
       // wheel speed measurement
       p_configuration_variables->ui8_wheel_speed_field_state = ui8_array[ADDRESS_WHEEL_SPEED_FIELD_STATE];
       
@@ -472,11 +476,11 @@ void EEPROM_controller(uint8_t ui8_operation)
       // pedal torque ADC offset set (weight=0)
       p_configuration_variables->ui8_adc_pedal_torque_offset_set = ui8_array[ADDRESS_PEDAL_TORQUE_ADC_OFFSET];
       
-	  // pedal torque ADC range (weight=max)
-	  ui16_temp = ui8_array[ADDRESS_PEDAL_TORQUE_ADC_RANGE_0];
-      ui8_temp = ui8_array[ADDRESS_PEDAL_TORQUE_ADC_RANGE_1];
+	  // pedal torque ADC max (weight=max)
+	  ui16_temp = ui8_array[ADDRESS_PEDAL_TORQUE_ADC_MAX_0];
+      ui8_temp = ui8_array[ADDRESS_PEDAL_TORQUE_ADC_MAX_1];
       ui16_temp += (((uint16_t) ui8_temp << 8) & 0xff00);
-      p_configuration_variables->ui16_adc_pedal_torque_range = ui16_temp;      
+      p_configuration_variables->ui16_adc_pedal_torque_max = ui16_temp;      
       
 	  // startup boost torque factor
 	  ui16_temp = ui8_array[ADDRESS_STARTUP_BOOST_TORQUE_FACTOR_0];
@@ -501,11 +505,12 @@ void EEPROM_controller(uint8_t ui8_operation)
       //ui16_temp += (((uint16_t) ui8_temp << 8) & 0xff00);
       //p_configuration_variables->ui16_cadence_sensor_pulse_high_percentage_x10 = ui16_temp;
       
-      
       // assist without pedal rotation threshold
       p_configuration_variables->ui8_assist_without_pedal_rotation_threshold = ui8_array[ADDRESS_ASSIST_WITHOUT_PEDAL_ROTATION_THRESHOLD];
-      p_configuration_variables->ui8_adc_battery_current_min = ui8_array[ADDRESS_ADC_10_BIT_BATTERY_CURRENT_MIN];
       
+	  // field weakening enebled
+      p_configuration_variables->ui8_field_weakening_enabled = ui8_array[ADDRESS_FIELD_WEAKENING_ENABLED];
+	  
       // lights
       p_configuration_variables->ui8_light_mode = ui8_array[ADDRESS_LIGHTS_MODE];
       p_configuration_variables->ui8_lights_state = ui8_array[ADDRESS_LIGHTS_STATE];
@@ -666,6 +671,9 @@ void EEPROM_controller(uint8_t ui8_operation)
       // motor acceleration
       ui8_array[ADDRESS_MOTOR_ACCELERATION] = p_configuration_variables->ui8_motor_acceleration; 
       
+	  // motor deceleration
+      ui8_array[ADDRESS_MOTOR_DECELERATION] = p_configuration_variables->ui8_motor_deceleration; 
+	  
       // wheel speed field state
       ui8_array[ADDRESS_WHEEL_SPEED_FIELD_STATE] = p_configuration_variables->ui8_wheel_speed_field_state;
       
@@ -690,8 +698,8 @@ void EEPROM_controller(uint8_t ui8_operation)
       ui8_array[ADDRESS_PEDAL_TORQUE_ADC_OFFSET] = p_configuration_variables->ui8_adc_pedal_torque_offset_set;
       
       // pedal torque ADC range (weight=max)
-      ui8_array[ADDRESS_PEDAL_TORQUE_ADC_RANGE_0] = p_configuration_variables->ui16_adc_pedal_torque_range & 255;
-      ui8_array[ADDRESS_PEDAL_TORQUE_ADC_RANGE_1] = (p_configuration_variables->ui16_adc_pedal_torque_range >> 8) & 255;
+      ui8_array[ADDRESS_PEDAL_TORQUE_ADC_MAX_0] = p_configuration_variables->ui16_adc_pedal_torque_max & 255;
+      ui8_array[ADDRESS_PEDAL_TORQUE_ADC_MAX_1] = (p_configuration_variables->ui16_adc_pedal_torque_max >> 8) & 255;
 	  
 	  // startup boost torque factor
       ui8_array[ADDRESS_STARTUP_BOOST_TORQUE_FACTOR_0] = p_configuration_variables->ui16_startup_boost_torque_factor & 255;
@@ -714,8 +722,10 @@ void EEPROM_controller(uint8_t ui8_operation)
       
       // assist without pedal rotation threshold
       ui8_array[ADDRESS_ASSIST_WITHOUT_PEDAL_ROTATION_THRESHOLD] = p_configuration_variables->ui8_assist_without_pedal_rotation_threshold;
-      ui8_array[ADDRESS_ADC_10_BIT_BATTERY_CURRENT_MIN] = p_configuration_variables->ui8_adc_battery_current_min;
 	  
+	  // field weakening enebled
+      ui8_array[ADDRESS_FIELD_WEAKENING_ENABLED] = p_configuration_variables->ui8_field_weakening_enabled;
+
       // lights
       ui8_array[ADDRESS_LIGHTS_MODE] = p_configuration_variables->ui8_light_mode;
       ui8_array[ADDRESS_LIGHTS_STATE] = p_configuration_variables->ui8_lights_state;

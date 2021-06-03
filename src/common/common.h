@@ -18,9 +18,7 @@
 #define HYBRID_ASSIST_MODE						  5
 #define CRUISE_MODE                               6
 #define WALK_ASSIST_MODE                          7
-//#define WALK_ASSIST_MODE                          5
-//#define CRUISE_MODE                               6
-//#define CADENCE_SENSOR_CALIBRATION_MODE           7
+#define MOTOR_CALIBRATION_MODE                    8
 
 // error codes
 #define NO_ERROR                                  0

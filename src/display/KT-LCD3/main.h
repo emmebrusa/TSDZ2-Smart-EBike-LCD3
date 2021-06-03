@@ -9,6 +9,7 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
 
+
 #define EXTI_PORTA_IRQHANDLER                     3
 #define EXTI_PORTC_IRQHANDLER                     5
 #define EXTI_PORTD_IRQHANDLER                     6
@@ -84,14 +85,14 @@
 #define DEFAULT_STARTUP_BOOST_ENABLED								1
 // default values for power assist
 //#define DEFAULT_VALUE_POWER_ASSIST_LEVEL_0                          0   // 0
-#define DEFAULT_VALUE_POWER_ASSIST_LEVEL_1                          25  // MAX 254
-#define DEFAULT_VALUE_POWER_ASSIST_LEVEL_2                          50
-#define DEFAULT_VALUE_POWER_ASSIST_LEVEL_3                          75
-#define DEFAULT_VALUE_POWER_ASSIST_LEVEL_4                          100
-#define DEFAULT_VALUE_POWER_ASSIST_LEVEL_5                          130
-#define DEFAULT_VALUE_POWER_ASSIST_LEVEL_6                          160
-#define DEFAULT_VALUE_POWER_ASSIST_LEVEL_7                          190
-#define DEFAULT_VALUE_POWER_ASSIST_LEVEL_8                          220
+#define DEFAULT_VALUE_POWER_ASSIST_LEVEL_1                          20  // MAX 254
+#define DEFAULT_VALUE_POWER_ASSIST_LEVEL_2                          40
+#define DEFAULT_VALUE_POWER_ASSIST_LEVEL_3                          60
+#define DEFAULT_VALUE_POWER_ASSIST_LEVEL_4                          80
+#define DEFAULT_VALUE_POWER_ASSIST_LEVEL_5                          100
+#define DEFAULT_VALUE_POWER_ASSIST_LEVEL_6                          130
+#define DEFAULT_VALUE_POWER_ASSIST_LEVEL_7                          160
+#define DEFAULT_VALUE_POWER_ASSIST_LEVEL_8                          200
 #define DEFAULT_VALUE_POWER_ASSIST_LEVEL_9                          250
 
 
@@ -157,10 +158,11 @@
 #define DEFAULT_VALUE_TOTAL_HOUR_TTM_1                              0
 
 
-
 // default value motor acceleration
 #define DEFAULT_VALUE_MOTOR_ACCELERATION                            25
 
+// default value motor deceleration
+#define DEFAULT_VALUE_MOTOR_DECELERATION                            0
 
 
 // default values for walk assist function
@@ -236,14 +238,14 @@
 // default set torque sensor calibration enabled
 #define DEFAULT_TORQUE_SENSOR_CALIBRATION_ENABLED					0
 // default value for torque assist
-#define DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_1                         50	// MAX 254
-#define DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_2                         70
-#define DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_3                         90
-#define DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_4                         120
-#define DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_5                         140
-#define DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_6                         160
-#define DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_7                         190
-#define DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_8                         220
+#define DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_1                         40	// MAX 254
+#define DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_2                         60
+#define DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_3                         80
+#define DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_4                         100
+#define DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_5                         120
+#define DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_6                         140
+#define DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_7                         180
+#define DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_8                         210
 #define DEFAULT_VALUE_TORQUE_ASSIST_LEVEL_9                         250
 
 
@@ -283,8 +285,9 @@
 
 // default value assist without pedal rotation threshold
 #define DEFAULT_VALUE_ASSIST_WITHOUT_PEDAL_ROTATION_THRESHOLD       30
-#define DEFAULT_VALUE_ADC_10_BIT_BATTERY_CURRENT_MIN				0
 
+// default value field weakening
+#define DEFAULT_VALUE_FIELD_WEAKENING_ENABLED						0
 
 // default value lights
 #define DEFAULT_VALUE_LIGHTS_MODE                                   0

@@ -144,8 +144,8 @@
 #define ADDRESS_LIGHTS_CONFIGURATION                                        121
 #define ADDRESS_WALK_ASSIST_BUTTON_BOUNCE_TIME                              122
 #define ADDRESS_PEDAL_TORQUE_ADC_OFFSET		                     			123
-#define ADDRESS_PEDAL_TORQUE_ADC_RANGE_0		                   			124
-#define ADDRESS_PEDAL_TORQUE_ADC_RANGE_1		                   			125
+#define ADDRESS_PEDAL_TORQUE_ADC_MAX_0		                   				124
+#define ADDRESS_PEDAL_TORQUE_ADC_MAX_1		                   				125
 #define ADDRESS_STARTUP_BOOST_TORQUE_FACTOR_0								126
 #define ADDRESS_STARTUP_BOOST_TORQUE_FACTOR_1								127
 #define ADDRESS_STARTUP_BOOST_CADENCE_STEP									128
@@ -160,8 +160,9 @@
 #define ADDRESS_EMTB_ASSIST_LEVEL_8                                      	137
 #define ADDRESS_EMTB_ASSIST_LEVEL_9                                      	138
 #define ADDRESS_EMTB_ASSIST_LEVEL_10	                                    139
-#define ADDRESS_ADC_10_BIT_BATTERY_CURRENT_MIN								140
-#define EEPROM_BYTES_STORED                                                 141
+#define ADDRESS_MOTOR_DECELERATION											140
+#define ADDRESS_FIELD_WEAKENING_ENABLED										141
+#define EEPROM_BYTES_STORED                                                 142
 
 
 #define DEFAULT_VALUE_KEY     204

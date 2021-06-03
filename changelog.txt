@@ -1,3 +1,16 @@
+TSDZ2 Open Source Firmware v20.1C.3 for KT-LCD3 display
+
+  1 - Updated to v12 version of mspider65 (Hall sensor calibration missing)
+  2 - Updated to v13 version of mspider65 (but with 19KHz PWM frequency)
+  3 - Improved motor efficiency with high power (by mspider65)
+  4 - Improved the problem of delay in restarting with bike in motion (from mspider65 v12)
+  5 - Improved standing start response.
+  6 - Decreased eMTB torque offset, it was too sensitive at the start.
+  7 - Added "Motor deceleration" adjustable 0-100%, (100% = fast stop).
+  8 - Speed sensor error threshold time increased (E08).
+  9 - Added enable / disable "Field Weakening".
+
+
 TSDZ2 Open Source Firmware v20.1C for KT-LCD3 display
 
 Motor changes
