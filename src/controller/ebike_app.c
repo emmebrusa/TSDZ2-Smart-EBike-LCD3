@@ -1953,7 +1953,7 @@ static void uart_send_package(void) {
     ui8_tx_buffer[5] = (uint8_t) (ui16_wheel_speed_x10 >> 8);
 
 	// brake state (bit 0)
-	ui8_tx_buffer[6] = ui8_brake_state;
+	ui8_tx_buffer[6] = ui8_brake_state >> 6;
 	// Bit free for future use
   
     // optional ADC channel value
