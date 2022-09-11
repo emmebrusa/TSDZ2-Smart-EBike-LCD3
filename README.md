@@ -1,7 +1,14 @@
+ATTENTION!
+Newer KT-LCD3 displays may not be compatible with this firmware.
+
 This repository is updated by mbrusa.
 
+<<<<<<< HEAD
 This fork is based on the v0.20beta1 and TSDZ2-ESP32 v7 by mspider65
 See the [wiki] for instructions
+=======
+This fork is based on the v0.20beta1 and TSDZ2-ESP32 di mspider65 See the [wiki] for instructions
+>>>>>>> f7570bcbf027d92503187bb108104fc5017ad194
 
 This ebike motor controller firmware project is to be used with the Tongsheng TSDZ2 mid drive motor.
 
@@ -14,9 +21,8 @@ This project is being developed and maintained for free by a community of users.
 
 
 For more details, see the project page: https://github.com/OpenSource-EBike-firmware/TSDZ2_wiki/wiki
-https://github.com/OpenSourceEBike/TSDZ2_wiki/wiki/0.20.0-(DEVELOPMENT)-%7C-KT-LCD3-%7C-TSDZ2-%7C-Manual#Configuration_Menu
 
-Additional wiki for this version: https://github.com/emmebrusa/TSDZ2-Smart-EBike-LCD3/wiki
+Wiki for this version: https://github.com/emmebrusa/TSDZ2-Smart-EBike-LCD3/blob/master/manuals/Wiki%20KT%20LCD3%20TSDZ2%20V20.1C.4.pdf
 
 **IMPORTANT NOTES**
 * Installing this firmware will void your warranty of the TSDZ2 mid drive and KT-LCD3.
