@@ -12,6 +12,25 @@
 #include "main.h"
 #include "stm8s_gpio.h"
 
+// Torque sensor calibration
+#define ADC_TORQUE_SENSOR_CALIBRATION_OFFSET    	6
+#define ADC_TORQUE_SENSOR_MIDDLE_OFFSET_ADJ			20
+#define ADC_TORQUE_SENSOR_RANGE_TARGET	  			160
+#define ADC_TORQUE_SENSOR_RANGE_TARGET_MIN 			133
+#define PEDAL_TORQUE_PER_10_BIT_ADC_STEP_BASE_X100	34 // base torque adc step
+#define WEIGHT_ON_PEDAL_FOR_STEP_CALIBRATION		24 // Kg
+#define PERCENT_TORQUE_SENSOR_RANGE_WITH_WEIGHT		75 // % of torque sensor range target with weight
+#define ADC_TORQUE_SENSOR_TARGET_WITH_WEIGHT		(uint16_t)((ADC_TORQUE_SENSOR_RANGE_TARGET*PERCENT_TORQUE_SENSOR_RANGE_WITH_WEIGHT)/100)
+
+extern volatile uint8_t ui8_pedal_torque_ADC_step_adv_calc_x100;
+extern volatile uint8_t ui8_adc_torque_calibration_offset;
+extern volatile uint8_t ui8_adc_torque_middle_offset_adj;
+extern volatile uint8_t ui8_adc_pedal_torque_offset_adj;
+extern volatile uint8_t ui8_adc_pedal_torque_angle_adj;
+extern volatile uint16_t ui16_adc_pedal_torque_range;
+extern volatile uint8_t ui8_startup_assist;
+extern volatile uint8_t ui8_torque_sensor_calibration_status;
+
 extern volatile uint8_t ui8_error_write_eeprom;
 
 typedef struct _motor_controller_data
@@ -35,7 +54,8 @@ typedef struct _motor_controller_data
   uint32_t ui32_wheel_speed_sensor_tick_counter_offset;
   uint16_t ui16_pedal_torque_x100;
   uint16_t ui16_pedal_power_x10;
-  uint16_t ui16_adc_pedal_torque_delta_calc;
+  uint16_t ui16_adc_pedal_torque_delta_boost;
+  uint16_t ui16_adc_pedal_torque_delta;
 } struct_motor_controller_data;
 
 typedef struct _configuration_variables
@@ -91,6 +111,7 @@ typedef struct _configuration_variables
   uint16_t ui16_battery_pack_resistance_x1000;
   uint8_t ui8_motor_type;
   uint8_t ui8_pedal_torque_per_10_bit_ADC_step_x100;
+  uint8_t ui8_pedal_torque_per_10_bit_ADC_step_adv_x100;
   uint16_t ui16_adc_motor_temperature_10b;
   uint8_t ui8_optional_ADC_function;
   uint8_t ui8_motor_temperature_min_value_to_limit;
@@ -133,8 +154,11 @@ typedef struct _configuration_variables
   uint8_t ui8_assist_whit_error_enabled;
   uint8_t ui8_riding_mode;
   uint8_t ui8_motor_deceleration;
-  uint8_t ui8_pedal_cadence_fast_stop;
   uint8_t ui8_field_weakening_enabled;
+  uint8_t ui8_adc_pedal_torque_offset_adj_set;
+  uint8_t ui8_adc_pedal_torque_range_adj;
+  uint8_t ui8_adc_pedal_torque_angle_adj_index;
+  uint8_t ui8_startup_assist_function_enabled;
 } struct_configuration_variables;
 
 

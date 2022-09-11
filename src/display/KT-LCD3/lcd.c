@@ -96,6 +96,17 @@ static uint16_t   ui16_battery_SOC_voltage_x100;
 static uint16_t  ui16_check_overvoltage = 0;
 volatile uint8_t ui8_error_write_eeprom = 0;
 
+static uint8_t ui8_adc_pedal_torque_angle_adj_array[41] = {160, 138, 120, 107, 96, 88, 80, 74, 70, 66, 63, 59, 56, 52,
+			50, 47, 44, 42, 39, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16 };
+volatile uint8_t ui8_pedal_torque_ADC_step_adv_calc_x100 = PEDAL_TORQUE_PER_10_BIT_ADC_STEP_BASE_X100;
+volatile uint8_t ui8_adc_torque_calibration_offset = ADC_TORQUE_SENSOR_CALIBRATION_OFFSET;
+volatile uint8_t ui8_adc_torque_middle_offset_adj = ADC_TORQUE_SENSOR_MIDDLE_OFFSET_ADJ;
+volatile uint8_t ui8_adc_pedal_torque_offset_adj = 0;
+volatile uint8_t ui8_adc_pedal_torque_angle_adj = 0;
+volatile uint16_t ui16_adc_pedal_torque_range = 0;
+volatile uint8_t ui8_startup_assist = 0;
+volatile uint8_t ui8_torque_sensor_calibration_status = 0;
+
 // menu variables
 static uint8_t    ui8_lcd_menu = MAIN_MENU;
 static uint8_t    ui8_lcd_menu_config_submenu_state = 0;
@@ -139,6 +150,7 @@ void assist_level_field(void);
 void brake(void);
 void calc_distance(void);
 void filter_variables(void);
+void calc_torque_variables (void);
 void lights(void);
 void street_mode(void);
 void energy(void);
@@ -295,6 +307,7 @@ void lcd_clock (void)
   }
   
   filter_variables();
+  calc_torque_variables();
   update_menu_flashing_state();
   calc_distance();
   lcd_update();
@@ -1003,7 +1016,7 @@ void lcd_execute_menu_config_submenu_power_assist(void)
     lcd_var_number.p_var_number = &configuration_variables.ui8_startup_boost_enabled;
     lcd_var_number.ui8_size = 8;
     lcd_var_number.ui8_decimal_digit = 0;
-    lcd_var_number.ui32_max_value = 1;
+    lcd_var_number.ui32_max_value = 2;
     lcd_var_number.ui32_min_value = 0;
     lcd_var_number.ui32_increment_step = 1;
     lcd_var_number.ui8_odometer_field = ODOMETER_FIELD;
@@ -1051,7 +1064,7 @@ void lcd_execute_menu_config_submenu_torque_assist(void)
     lcd_var_number.p_var_number = &configuration_variables.ui8_torque_sensor_calibration_enabled;
     lcd_var_number.ui8_size = 8;
     lcd_var_number.ui8_decimal_digit = 0;
-    lcd_var_number.ui32_max_value = 1;
+    lcd_var_number.ui32_max_value = 2;
     lcd_var_number.ui32_min_value = 0;
     lcd_var_number.ui32_increment_step = 1;
     lcd_var_number.ui8_odometer_field = ODOMETER_FIELD;
@@ -1228,10 +1241,27 @@ void lcd_execute_menu_config_submenu_walk_assist(void)
       lcd_print(ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 0);
     }
   }
+  else if (ui8_lcd_menu_config_submenu_state == 2)
+  {
+    // enable/disable startup assist function
+    lcd_var_number.p_var_number = &configuration_variables.ui8_startup_assist_function_enabled;
+    lcd_var_number.ui8_size = 8;
+    lcd_var_number.ui8_decimal_digit = 0;
+    lcd_var_number.ui32_max_value = 1;
+    lcd_var_number.ui32_min_value = 0;
+    lcd_var_number.ui32_increment_step = 1;
+    lcd_var_number.ui8_odometer_field = ODOMETER_FIELD;
+    lcd_configurations_print_number(&lcd_var_number);
+    
+    if (ui8_lcd_menu_flash_state || ui8_lcd_menu_config_submenu_change_variable_enabled)
+    {
+      lcd_print(ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 0);
+    }
+  }
   else
   {
     // value of each walk assist power value
-    lcd_var_number.p_var_number = &configuration_variables.ui8_walk_assist_level[(ui8_lcd_menu_config_submenu_state - 2)];
+    lcd_var_number.p_var_number = &configuration_variables.ui8_walk_assist_level[(ui8_lcd_menu_config_submenu_state - 3)];
     lcd_var_number.ui8_size = 8;
     lcd_var_number.ui8_decimal_digit = 0;
     lcd_var_number.ui32_max_value = 100;
@@ -1249,7 +1279,7 @@ void lcd_execute_menu_config_submenu_walk_assist(void)
   
   lcd_enable_walk_symbol(1);
   
-  submenu_state_controller(configuration_variables.ui8_number_of_assist_levels + 1);
+  submenu_state_controller(configuration_variables.ui8_number_of_assist_levels + 2);
 }
 
 
@@ -1647,7 +1677,7 @@ void lcd_execute_menu_config_submenu_advanced_setup(void)
     
     case 2:
     
-      // pedal torque conversion
+      // pedal torque conversion with calibration disabled
       lcd_var_number.p_var_number = &configuration_variables.ui8_pedal_torque_per_10_bit_ADC_step_x100;
       lcd_var_number.ui8_size = 8;
       lcd_var_number.ui8_decimal_digit = 0;
@@ -1777,7 +1807,7 @@ void lcd_execute_menu_config_submenu_advanced_setup(void)
 	
 	case 11:
     
-      // pedal torque adc range
+      // pedal torque adc max
       lcd_var_number.p_var_number = &configuration_variables.ui16_adc_pedal_torque_max;
       lcd_var_number.ui8_size = 16;
       lcd_var_number.ui8_decimal_digit = 0;
@@ -1830,7 +1860,58 @@ void lcd_execute_menu_config_submenu_advanced_setup(void)
       lcd_configurations_print_number(&lcd_var_number);
     break;
 	
+	case 15:
 	
+	  // Torque ADC offset adjustment (0 / 34)
+      lcd_var_number.p_var_number = &configuration_variables.ui8_adc_pedal_torque_offset_adj_set;
+      lcd_var_number.ui8_size = 8;
+      lcd_var_number.ui8_decimal_digit = 0;
+      lcd_var_number.ui32_max_value = 34;
+      lcd_var_number.ui32_min_value = 0;
+      lcd_var_number.ui32_increment_step = 1;
+      lcd_var_number.ui8_odometer_field = ODOMETER_FIELD;
+      lcd_configurations_print_number(&lcd_var_number);
+    break;
+	
+	case 16:
+	
+	  // Torque ADC range adjustment (0 / 40)
+      lcd_var_number.p_var_number = &configuration_variables.ui8_adc_pedal_torque_range_adj;
+      lcd_var_number.ui8_size = 8;
+      lcd_var_number.ui8_decimal_digit = 0;
+      lcd_var_number.ui32_max_value = 40;
+      lcd_var_number.ui32_min_value = 0;
+      lcd_var_number.ui32_increment_step = 1;
+      lcd_var_number.ui8_odometer_field = ODOMETER_FIELD;
+      lcd_configurations_print_number(&lcd_var_number);
+    break;
+	
+	case 17:
+	
+	  // Torque ADC angle adjustment (0 / 40)
+      lcd_var_number.p_var_number = &configuration_variables.ui8_adc_pedal_torque_angle_adj_index;
+      lcd_var_number.ui8_size = 8;
+      lcd_var_number.ui8_decimal_digit = 0;
+      lcd_var_number.ui32_max_value = 40;
+      lcd_var_number.ui32_min_value = 0;
+      lcd_var_number.ui32_increment_step = 1;
+      lcd_var_number.ui8_odometer_field = ODOMETER_FIELD;
+      lcd_configurations_print_number(&lcd_var_number);
+    break;
+	
+	case 18:
+    
+      // pedal torque conversion with calibration disabled
+      lcd_var_number.p_var_number = &configuration_variables.ui8_pedal_torque_per_10_bit_ADC_step_adv_x100;
+      lcd_var_number.ui8_size = 8;
+      lcd_var_number.ui8_decimal_digit = 0;
+      lcd_var_number.ui32_max_value = 255;
+      lcd_var_number.ui32_min_value = 0;
+      lcd_var_number.ui32_increment_step = 1;
+      lcd_var_number.ui8_odometer_field = ODOMETER_FIELD;
+      lcd_configurations_print_number(&lcd_var_number);
+      
+    break;
   }
 
   if (ui8_lcd_menu_flash_state || ui8_lcd_menu_config_submenu_change_variable_enabled)
@@ -1838,7 +1919,7 @@ void lcd_execute_menu_config_submenu_advanced_setup(void)
     lcd_print(ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 0);
   }
   
-  submenu_state_controller(14);
+  submenu_state_controller(18);
 }
 
 
@@ -1878,7 +1959,7 @@ void lcd_execute_menu_config_submenu_technical (void)
     break;
     
     case 7:
-      lcd_print(motor_controller_data.ui16_adc_pedal_torque_delta_calc, ODOMETER_FIELD, 0);
+      lcd_print(motor_controller_data.ui16_adc_pedal_torque_delta_boost, ODOMETER_FIELD, 0);
     break;
   }
   
@@ -2286,7 +2367,7 @@ void power_field(void)
 void riding_mode_controller(void)
 {
   static uint8_t ui8_long_hold_down_button;
-  
+  static uint8_t ui8_long_hold_up_button;
   
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   
@@ -2449,6 +2530,71 @@ void riding_mode_controller(void)
       // reset long button hold flag
       ui8_long_hold_down_button = 0;
     }
+  }
+  
+  // set startup assist
+  static uint8_t ui8_startup_assist_init = 0;
+  static uint8_t ui8_startup_assist_timeout = 0;
+  static uint16_t ui16_startup_assist_maxtime = 0;
+  static uint8_t ui8_startup_assist_lights_restore = 0;
+  
+  if (configuration_variables.ui8_startup_assist_function_enabled)
+  {
+	if (UP_LONG_CLICK)
+	{
+		ui8_long_hold_up_button = 1;
+	}
+	
+	if (ui8_long_hold_up_button)
+	{
+		// clear UP button events if button when using Startup assist
+		UP_CLICK = 0;
+		//UP_LONG_CLICK = 0;
+		UP_CLICK_LONG_CLICK = 0;
+		
+		// if up button is pressed
+		if((buttons_get_up_state())&&(!ui8_startup_assist_init))
+		{
+			ui8_startup_assist_init = 1;
+			ui8_startup_assist = 1;
+			ui16_startup_assist_maxtime = 1000; // 10.0 seconds
+			ui8_startup_assist_lights_restore = 0;
+		}
+		
+		// if up button is still pressed
+		if((buttons_get_up_state())&&(ui8_startup_assist))
+		{
+			ui8_startup_assist_timeout = 20; // 0.2 seconds
+	  
+			if (--ui16_startup_assist_maxtime == 0)
+				ui8_startup_assist = 0;
+			
+			if((ui16_startup_assist_maxtime <= 800) // 2 seconds (1000 - 800)
+			  &&(!ui8_startup_assist_lights_restore)) {
+				ui8_startup_assist_lights_restore = 1;
+				configuration_variables.ui8_lights_state = !configuration_variables.ui8_lights_state;
+				// set backlight brightness
+				if (configuration_variables.ui8_lights_state) { lcd_set_backlight_intensity(configuration_variables.ui8_lcd_backlight_on_brightness); }
+				else { lcd_set_backlight_intensity(configuration_variables.ui8_lcd_backlight_off_brightness); }
+				
+				// set light symbol on display
+				lcd_enable_lights_symbol(configuration_variables.ui8_lights_state);
+			}
+			
+			lcd_enable_walk_symbol(1);
+		}
+		else if((buttons_get_up_state() == 0)&&(--ui8_startup_assist_timeout == 0))
+		{
+			ui8_startup_assist = 0;
+			// reset long button hold flag
+			ui8_long_hold_up_button = 0;
+		} 
+	}
+	else
+	{
+		ui8_startup_assist_init = 0;
+		ui8_startup_assist = 0;
+	}
   }
 }
 
@@ -3835,6 +3981,14 @@ void filter_variables()
     ui8_pedal_cadence_RPM_filtered = filter(motor_controller_data.ui8_pedal_cadence_RPM, ui8_pedal_cadence_RPM_filtered, 5);
     
     // human power
+	if(configuration_variables.ui8_torque_sensor_calibration_enabled == 1) {
+		motor_controller_data.ui16_pedal_power_x10 = (uint16_t)(((uint32_t) motor_controller_data.ui16_adc_pedal_torque_delta * ui8_pedal_torque_ADC_step_adv_calc_x100 * motor_controller_data.ui8_pedal_cadence_RPM) / 96);
+		ui8_torque_sensor_calibration_status = 1;
+	}
+	else {
+		motor_controller_data.ui16_pedal_power_x10 = (uint16_t)(((uint32_t) motor_controller_data.ui16_adc_pedal_torque_delta * configuration_variables.ui8_pedal_torque_per_10_bit_ADC_step_x100 * motor_controller_data.ui8_pedal_cadence_RPM) / 96);
+		ui8_torque_sensor_calibration_status = 0;
+	}
     ui16_pedal_power_filtered_x10 = filter(motor_controller_data.ui16_pedal_power_x10, ui16_pedal_power_filtered_x10, 7);
     ui16_pedal_power_step_filtered = ui16_pedal_power_filtered_x10 / 100;
     ui16_pedal_power_step_filtered = ui16_pedal_power_step_filtered * 10;
@@ -3855,6 +4009,57 @@ void filter_variables()
   }
 }
 
+
+void calc_torque_variables (void)
+{
+	// pedal torque range
+	ui16_adc_pedal_torque_range = configuration_variables.ui16_adc_pedal_torque_max - configuration_variables.ui8_adc_pedal_torque_offset_set;
+	
+	// torque sensor angle adjustment
+	ui8_adc_pedal_torque_angle_adj = ui8_adc_pedal_torque_angle_adj_array[configuration_variables.ui8_adc_pedal_torque_angle_adj_index];
+	
+	// calculate pedal torque ADC step adv for human power with calibration enebled
+	if(configuration_variables.ui8_torque_sensor_calibration_enabled == 1) {
+		
+		// torque sensor offset adjustment parameterization
+		ui8_adc_torque_calibration_offset = (uint8_t)((uint16_t)(((ADC_TORQUE_SENSOR_CALIBRATION_OFFSET
+			* ui16_adc_pedal_torque_range) / ADC_TORQUE_SENSOR_RANGE_TARGET) + 1));
+		ui8_adc_torque_middle_offset_adj = (uint8_t)((uint16_t)(((ADC_TORQUE_SENSOR_MIDDLE_OFFSET_ADJ
+			* ui16_adc_pedal_torque_range) / ADC_TORQUE_SENSOR_RANGE_TARGET) + 1));
+		ui8_adc_pedal_torque_offset_adj = (uint8_t)((uint16_t)(((configuration_variables.ui8_adc_pedal_torque_offset_adj_set
+			* ui16_adc_pedal_torque_range) / ADC_TORQUE_SENSOR_RANGE_TARGET) + 1));
+		
+		uint16_t ui16_adc_pedal_torque_range_target_max = ADC_TORQUE_SENSOR_RANGE_TARGET_MIN
+			* (100 + configuration_variables.ui8_adc_pedal_torque_range_adj) / 100;
+		
+		uint16_t ui16_adc_pedal_torque_delta_with_weight = (((((ADC_TORQUE_SENSOR_TARGET_WITH_WEIGHT * ADC_TORQUE_SENSOR_RANGE_TARGET_MIN) / ADC_TORQUE_SENSOR_RANGE_TARGET)
+			* (100 + configuration_variables.ui8_adc_pedal_torque_range_adj) / 100)
+			* (ADC_TORQUE_SENSOR_TARGET_WITH_WEIGHT - ui8_adc_torque_calibration_offset + ui8_adc_pedal_torque_offset_adj
+			- ((((ui8_adc_torque_middle_offset_adj * 2) - ui8_adc_torque_calibration_offset - ui8_adc_pedal_torque_offset_adj) * ADC_TORQUE_SENSOR_TARGET_WITH_WEIGHT)
+			/ ADC_TORQUE_SENSOR_RANGE_TARGET))) / ADC_TORQUE_SENSOR_TARGET_WITH_WEIGHT);
+
+		ui8_pedal_torque_ADC_step_adv_calc_x100 = (uint8_t)((uint16_t)(((WEIGHT_ON_PEDAL_FOR_STEP_CALIBRATION * 167)
+			/ ((ui16_adc_pedal_torque_delta_with_weight * ui16_adc_pedal_torque_range_target_max)
+			/ (ui16_adc_pedal_torque_range_target_max - (((ui16_adc_pedal_torque_range_target_max - ui16_adc_pedal_torque_delta_with_weight) * 10)
+			/ ui8_adc_pedal_torque_angle_adj)))
+			* configuration_variables.ui8_pedal_torque_per_10_bit_ADC_step_adv_x100)
+			/ PEDAL_TORQUE_PER_10_BIT_ADC_STEP_BASE_X100)) + 1;
+	}
+	else {
+		ui8_adc_torque_calibration_offset = ADC_TORQUE_SENSOR_CALIBRATION_OFFSET;
+		ui8_adc_torque_middle_offset_adj = ADC_TORQUE_SENSOR_MIDDLE_OFFSET_ADJ;
+		ui8_adc_pedal_torque_offset_adj = configuration_variables.ui8_adc_pedal_torque_offset_adj_set;
+	}
+	
+	// pedal torque adc step x100 estimated with calibration disabled and estimated enabled
+	if(configuration_variables.ui8_torque_sensor_calibration_enabled == 2) {
+		uint16_t ui16_adc_pedal_torque_with_weight = configuration_variables.ui8_adc_pedal_torque_offset_set
+			+ (ui16_adc_pedal_torque_range * PERCENT_TORQUE_SENSOR_RANGE_WITH_WEIGHT) / 100;
+		
+		configuration_variables.ui8_pedal_torque_per_10_bit_ADC_step_x100 = (uint8_t)((uint16_t)(WEIGHT_ON_PEDAL_FOR_STEP_CALIBRATION * 167)
+			/ (ui16_adc_pedal_torque_with_weight - configuration_variables.ui8_adc_pedal_torque_offset_set) + 1);
+	}
+}	
 
 
 void calc_distance (void)

@@ -162,10 +162,16 @@
 #define ADDRESS_EMTB_ASSIST_LEVEL_10	                                    139
 #define ADDRESS_MOTOR_DECELERATION											140
 #define ADDRESS_FIELD_WEAKENING_ENABLED										141
-#define EEPROM_BYTES_STORED                                                 142
+#define ADDRESS_ADC_TORQUE_OFFSET_ADJ							  	  		142
+#define ADDRESS_ADC_TORQUE_RANGE_ADJ							  	  		143
+#define ADDRESS_ADC_TORQUE_ANGLE_ADJ_INDEX							  	  	144
+#define ADDRESS_STARTUP_ASSIST_FUNCTION_ENABLED								145
+#define ADDRESS_PEDAL_TORQUE_PER_10_BIT_ADC_STEP_ADV_X100					146
+#define EEPROM_BYTES_STORED                                                 147
 
 
 #define DEFAULT_VALUE_KEY     204
+#define NEW_VALUE_KEY		  205
 #define SET_TO_DEFAULT        0
 #define READ_FROM_MEMORY      1
 #define WRITE_TO_MEMORY       2

@@ -177,7 +177,7 @@
 #define DEFAULT_VALUE_WALK_ASSIST_LEVEL_7                           44
 #define DEFAULT_VALUE_WALK_ASSIST_LEVEL_8                           46
 #define DEFAULT_VALUE_WALK_ASSIST_LEVEL_9                           48
-
+#define DEFAULT_VALUE_STARTUP_ASSIST_FUNCTION_ENABLED				0
 
 
 // default values for cruise function
@@ -209,8 +209,12 @@
 
 // default value pedal torque conversion
 #define DEFAULT_VALUE_PEDAL_TORQUE_PER_10_BIT_ADC_STEP_X100         67
+#define DEFAULT_VALUE_PEDAL_TORQUE_PER_10_BIT_ADC_STEP_ADV_X100     34
 
-
+// default value pedal torque ADC adjustment
+#define DEFAULT_VALUE_ADC_TORQUE_OFFSET_ADJ							20
+#define DEFAULT_VALUE_ADC_TORQUE_RANGE_ADJ							20
+#define DEFAULT_VALUE_ADC_TORQUE_ANGLE_ADJ							20
 // default value pedal torque ADC offset (weight=0)
 #define DEFAULT_VALUE_PEDAL_TORQUE_ADC_OFFSET		       			150
 // default value pedal torque ADC range (weight=max)
@@ -287,7 +291,7 @@
 #define DEFAULT_VALUE_ASSIST_WITHOUT_PEDAL_ROTATION_THRESHOLD       30
 
 // default value field weakening
-#define DEFAULT_VALUE_FIELD_WEAKENING_ENABLED						0
+#define DEFAULT_VALUE_FIELD_WEAKENING_ENABLED						1
 
 // default value lights
 #define DEFAULT_VALUE_LIGHTS_MODE                                   0

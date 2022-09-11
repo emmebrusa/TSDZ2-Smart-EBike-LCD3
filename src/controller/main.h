@@ -13,7 +13,7 @@
 //#define MAIN_TIME_DEBUG
 //#define HALL_DEBUG
 
-#define FW_VERSION 13
+#define FW_VERSION 13 // mspider65
 
 /*---------------------------------------------------------
  NOTE: regarding motor rotor offset
@@ -40,6 +40,7 @@
 // motor
 //#define PWM_COUNTER_MAX                                         444     // 16MHz / 888 = 18,018 KHz
 #define PWM_COUNTER_MAX                                         420     // 16MHz / 840 = 19,047 KHz
+
 #define PWM_CYCLES_SECOND                                       (16000000/(PWM_COUNTER_MAX*2)) // 55.5us (PWM period)
 
 /*---------------------------------------------------------
@@ -53,18 +54,18 @@
  ---------------------------------------------------------*/
 
 // ramp up/down PWM cycles count
-#define PWM_DUTY_CYCLE_RAMP_UP_INVERSE_STEP_CADENCE_OFFSET      60     // PWM_DUTY_CYCLE_RAMP_UP_INVERSE_STEP offset for cadence assist mode
+#define PWM_DUTY_CYCLE_RAMP_UP_INVERSE_STEP_CADENCE_OFFSET      (uint8_t)(PWM_CYCLES_SECOND/260) // PWM_DUTY_CYCLE_RAMP_UP_INVERSE_STEP offset for cadence assist mode
 #define PWM_DUTY_CYCLE_RAMP_UP_INVERSE_STEP_DEFAULT             (uint8_t)(PWM_CYCLES_SECOND/98) // (should be less than 255-50->205) 160 -> 160 * 64 us for every duty cycle increment at 15.625KHz
-#define PWM_DUTY_CYCLE_RAMP_UP_INVERSE_STEP_MIN                 (uint8_t)(PWM_CYCLES_SECOND/781)     // 20 -> 20 * 64 us for every duty cycle increment at 15.625KHz
-#define PWM_DUTY_CYCLE_RAMP_UP_INVERSE_STEP_STARTUP             60     // Initial RAMP UP at motor startup
-#define PWM_DUTY_CYCLE_RAMP_DOWN_INVERSE_STEP_DEFAULT           (uint8_t)(PWM_CYCLES_SECOND/390)     // 40 -> 40 * 64 us for every duty cycle decrement at 15.625KHz
-#define PWM_DUTY_CYCLE_RAMP_DOWN_INVERSE_STEP_MIN               (uint8_t)(PWM_CYCLES_SECOND/1953)      // 8 -> 8 * 64 us for every duty cycle decrement at 15.625KHz
-#define CRUISE_DUTY_CYCLE_RAMP_UP_INVERSE_STEP                  (uint8_t)(PWM_CYCLES_SECOND/195)     // 80 at 15.625KHz
-#define WALK_ASSIST_DUTY_CYCLE_RAMP_UP_INVERSE_STEP             (uint8_t)(PWM_CYCLES_SECOND/78)    // 200 at 15.625KHz
-#define THROTTLE_DUTY_CYCLE_RAMP_UP_INVERSE_STEP_DEFAULT        (uint8_t)(PWM_CYCLES_SECOND/195)     // 80 at 15.625KHz
-#define THROTTLE_DUTY_CYCLE_RAMP_UP_INVERSE_STEP_MIN            (uint8_t)(PWM_CYCLES_SECOND/390)     // 40 at 15.625KHz
+#define PWM_DUTY_CYCLE_RAMP_UP_INVERSE_STEP_MIN                 (uint8_t)(PWM_CYCLES_SECOND/781) // 20 -> 20 * 64 us for every duty cycle increment at 15.625KHz
+#define PWM_DUTY_CYCLE_RAMP_DOWN_INVERSE_STEP_DEFAULT           (uint8_t)(PWM_CYCLES_SECOND/390) // 40 -> 40 * 64 us for every duty cycle decrement at 15.625KHz
+#define PWM_DUTY_CYCLE_RAMP_DOWN_INVERSE_STEP_MIN               (uint8_t)(PWM_CYCLES_SECOND/1953) // 8 -> 8 * 64 us for every duty cycle decrement at 15.625KHz
+#define CRUISE_DUTY_CYCLE_RAMP_UP_INVERSE_STEP                  (uint8_t)(PWM_CYCLES_SECOND/195) // 80 at 15.625KHz
+#define WALK_ASSIST_DUTY_CYCLE_RAMP_UP_INVERSE_STEP             (uint8_t)(PWM_CYCLES_SECOND/78) // 200 at 15.625KHz
+#define THROTTLE_DUTY_CYCLE_RAMP_UP_INVERSE_STEP_DEFAULT        (uint8_t)(PWM_CYCLES_SECOND/195) // 80 at 15.625KHz
+#define THROTTLE_DUTY_CYCLE_RAMP_UP_INVERSE_STEP_MIN            (uint8_t)(PWM_CYCLES_SECOND/390) // 40 at 15.625KHz
 
 #define MOTOR_OVER_SPEED_ERPS                                   ((PWM_CYCLES_SECOND/29) < 650 ?  (PWM_CYCLES_SECOND/29) : 650) // motor max speed | 29 points for the sinewave at max speed (less than PWM_CYCLES_SECOND/29)
+#define MOTOR_SPEED_FIELD_WEAKEANING_MIN          				300
 
 // cadence
 #define CADENCE_SENSOR_CALC_COUNTER_MIN                         (uint16_t)((uint32_t)PWM_CYCLES_SECOND*100U/446U)  // 3500 at 15.625KHz
@@ -85,12 +86,11 @@
 #define MIDDLE_PWM_COUNTER                                      110
 */
 
-#define PWM_DUTY_CYCLE_MAX                                      254
-#define PWM_DUTY_CYCLE_STARTUP                                  30    // Initial PWM Duty Cycle at motor startup
+#define PWM_DUTY_CYCLE_MAX										254
+#define PWM_DUTY_CYCLE_STARTUP									30    // Initial PWM Duty Cycle at motor startup
 
 // ----------------------------------------------------------------------------------------------------------------
 // ----------------------------------------------------------------------------------------------------------------
-
 
 /* Hall Sensors NOTE! - results after Hall sensor calibration experiment
 Dai test sulla calibrazione dei sensori Hall risulta che Trise - Tfall = 21 e cioè 84 us
@@ -120,16 +120,18 @@ HALL_COUNTER_OFFSET_UP:    29 -> 44
 #define HALL_COUNTER_OFFSET_UP                  (HALL_COUNTER_OFFSET_DOWN + 21)
 #define FW_HALL_COUNTER_OFFSET_MAX              6 // 6*4=24us max time offset
 
-
 #define MOTOR_ROTOR_INTERPOLATION_MIN_ERPS      10
 
-// Torque sensor values
-#define ADC_TORQUE_SENSOR_CALIBRATION_OFFSET    6
-#define ADC_TORQUE_SENSOR_OFFSET_DEFAULT		150
 // adc torque offset gap value for error
-#define ADC_TORQUE_SENSOR_OFFSET_THRESHOLD		35
-// adc torque delta range value for remapping
-#define ADC_TORQUE_SENSOR_RANGE_MIN	  			160
+#define ADC_TORQUE_SENSOR_OFFSET_THRESHOLD		25
+
+// Torque sensor values
+#define ADC_TORQUE_SENSOR_OFFSET_DEFAULT		150
+// adc torque range parameters for remapping
+#define ADC_TORQUE_SENSOR_RANGE_TARGET	  		160
+#define ADC_TORQUE_SENSOR_RANGE_TARGET_MIN 		133
+#define ADC_TORQUE_SENSOR_ANGLE_COEFF			11
+#define ADC_TORQUE_SENSOR_ANGLE_COEFF_X10		(uint8_t)(ADC_TORQUE_SENSOR_ANGLE_COEFF * 10)
 // scale the torque assist target current
 #define TORQUE_ASSIST_FACTOR_DENOMINATOR		110
 
@@ -141,6 +143,7 @@ HALL_COUNTER_OFFSET_UP:    29 -> 44
  interpolation 60 degrees. Must be found experimentally
  but a value of 25 may be good.
  ---------------------------------------------------------*/
+
 #define ADC_10_BIT_BATTERY_CURRENT_MAX                            112	// 18 amps
 #define ADC_10_BIT_MOTOR_PHASE_CURRENT_MAX                        187	// 30 amps
 //#define ADC_10_BIT_BATTERY_CURRENT_MAX                            106	// 17 amps
@@ -201,6 +204,9 @@ HALL_COUNTER_OFFSET_UP:    29 -> 44
 #define BATTERY_VOLTAGE_PER_10_BIT_ADC_STEP_X512                  44
 #define BATTERY_VOLTAGE_PER_10_BIT_ADC_STEP_X1000                 87  // conversion value verified with a cheap power meter
 
+// ADC battery voltage to be subtracted from the cut-off
+#define DIFFERENCE_CUT_OFF_SHUTDOWN_10_BIT						  100
+
 /*---------------------------------------------------------
  NOTE: regarding ADC battery voltage measurement
 
@@ -215,5 +221,14 @@ HALL_COUNTER_OFFSET_UP:    29 -> 44
 // ADC battery current measurement
 #define BATTERY_CURRENT_PER_10_BIT_ADC_STEP_X512                  80
 #define BATTERY_CURRENT_PER_10_BIT_ADC_STEP_X100                  16  // 0.16A x 10 bit ADC step
+
+// walk assist
+#define WALK_ASSIST_PROP_GAIN					12
+#define WALK_ASSIST_ADJ_DELAY_MIN				4
+#define WALK_ASSIST_DUTY_CYCLE_MIN              40
+#define WALK_ASSIST_DUTY_CYCLE_MAX              120
+#define WALK_ASSIST_ADC_BATTERY_CURRENT_MAX     80
+#define WALK_ASSIST_SPEED_MIN_DETECTABLE		38
+#define WALK_ASSIST_SPEED_NO_DETECTED_COEFF		3
 
 #endif // _MAIN_H_

@@ -17,7 +17,7 @@
 
 #define UART_NUMBER_DATA_BYTES_TO_RECEIVE   26  // change this value depending on how many data bytes there are to receive ( Package = one start byte + data bytes + two bytes 16 bit CRC )
 #define UART_NUMBER_DATA_BYTES_TO_SEND      7   // change this value depending on how many data bytes there are to send ( Package = one start byte + data bytes + two bytes 16 bit CRC )
-#define UART_MAX_NUMBER_MESSAGE_ID          6   // change this value depending on how many different packages there are to send
+#define UART_MAX_NUMBER_MESSAGE_ID          7   // change this value depending on how many different packages there are to send
 
 volatile uint8_t  ui8_received_package_flag = 0;
 volatile uint8_t  ui8_rx_buffer[UART_NUMBER_DATA_BYTES_TO_RECEIVE + 3];
@@ -101,11 +101,14 @@ void uart_data_clock (void)
   struct_motor_controller_data *p_motor_controller_data;
   struct_configuration_variables *p_configuration_variables;
 
+  uint8_t ui8_startup_assist_status = 0;
   uint8_t ui8_temp;
-  uint16_t ui16_temp;
   
   if (ui8_received_package_flag)
   {
+	uint8_t ui8_startup_boost_enable;
+	uint8_t ui8_startup_boost_at_zero;
+	
     // validation of the package data
     ui16_crc_rx = 0xffff;
     
@@ -177,11 +180,11 @@ void uart_data_clock (void)
       // pedal torque x100
       p_motor_controller_data->ui16_pedal_torque_x100 = (((uint16_t) ui8_rx_buffer [22]) << 8) + ((uint16_t) ui8_rx_buffer [21]);
       
-      // human power x10
-      p_motor_controller_data->ui16_pedal_power_x10 = (((uint16_t) ui8_rx_buffer [24]) << 8) + ((uint16_t) ui8_rx_buffer [23]);
-      
-	  // Free for future use
-      p_motor_controller_data->ui16_adc_pedal_torque_delta_calc = (((uint16_t) ui8_rx_buffer [26]) << 8) + ((uint16_t) ui8_rx_buffer [25]);        
+      // pedal torque delta no boost
+      p_motor_controller_data->ui16_adc_pedal_torque_delta = (((uint16_t) ui8_rx_buffer [24]) << 8) + ((uint16_t) ui8_rx_buffer [23]);
+	  
+	  // pedal torque delta boost
+      p_motor_controller_data->ui16_adc_pedal_torque_delta_boost = (((uint16_t) ui8_rx_buffer [26]) << 8) + ((uint16_t) ui8_rx_buffer [25]);        
 
       // flag that the first communication package is received from the motor controller
       ui8_received_first_package = 1;
@@ -287,20 +290,36 @@ void uart_data_clock (void)
           break;
 
         case 2:
-		  // pedal cadence fast stop
-		  if(p_configuration_variables->ui8_motor_deceleration == 100)
-			  p_configuration_variables->ui8_pedal_cadence_fast_stop = 1;
-		  else
-			  p_configuration_variables->ui8_pedal_cadence_fast_stop = 0;
+		  // startup boost enabled and cadence or speed mode
+		  if(p_configuration_variables->ui8_startup_boost_enabled == 1) {
+			  ui8_startup_boost_enable = 1;
+			  ui8_startup_boost_at_zero = 0; // cadence
+		  }
+		  else if(p_configuration_variables->ui8_startup_boost_enabled == 2) {
+			  ui8_startup_boost_enable = 1;
+			  ui8_startup_boost_at_zero = 1; // speed
+		  }
+		  else {
+			  ui8_startup_boost_enable = 0;
+			  ui8_startup_boost_at_zero = 0;
+		  }
 		  
+		  // get startup assist state
+		  if ((p_configuration_variables->ui8_assist_level)
+			 &&(p_configuration_variables->ui8_startup_assist_function_enabled))
+				ui8_startup_assist_status = ui8_startup_assist; 
+		  else
+				ui8_startup_assist_status = 0;
+		
           // set motor type & function setting
           ui8_tx_buffer[5] = p_configuration_variables->ui8_motor_type |
-							(p_configuration_variables->ui8_startup_boost_enabled << 1) |
-							(p_configuration_variables->ui8_torque_sensor_calibration_enabled << 2) |
+							(ui8_startup_boost_enable << 1) |
+							(ui8_torque_sensor_calibration_status << 2) |
 							(p_configuration_variables->ui8_assist_whit_error_enabled << 3) |
-							(p_configuration_variables->ui8_pedal_cadence_fast_stop << 4) |
+							(ui8_startup_boost_at_zero << 4) |
 							(p_configuration_variables->ui8_field_weakening_enabled << 5) |
-							(!p_configuration_variables->ui8_assist_level << 6);
+							(!p_configuration_variables->ui8_assist_level << 6) |
+							(ui8_startup_assist_status << 7);
 							
           // motor over temperature min value limit
           ui8_tx_buffer[6] = p_configuration_variables->ui8_motor_temperature_min_value_to_limit;
@@ -310,13 +329,13 @@ void uart_data_clock (void)
           break;
 
         case 3:
-		  // pedal torque ADC offset set (weight=0)
-          ui8_tx_buffer[5] = p_configuration_variables->ui8_adc_pedal_torque_offset_set;
-          
-		  // pedal torque ADC range (weight=max)
-          ui16_temp = p_configuration_variables->ui16_adc_pedal_torque_max - p_configuration_variables->ui8_adc_pedal_torque_offset_set;
-          ui8_tx_buffer[6] = (uint8_t) (ui16_temp & 0xff);
-          ui8_tx_buffer[7] = (uint8_t) (ui16_temp >> 8);
+		  // adc torque calibration offset & middle offset adj
+          ui8_tx_buffer[5] = (ui8_adc_torque_calibration_offset & 7);
+          ui8_tx_buffer[5] |= ((ui8_adc_torque_middle_offset_adj & 31) << 3);
+		  
+		  // pedal torque ADC range (pedal torque ADC max - pedal torque ADC offset)
+          ui8_tx_buffer[6] = (uint8_t) (ui16_adc_pedal_torque_range & 0xff);
+          ui8_tx_buffer[7] = (uint8_t) (ui16_adc_pedal_torque_range >> 8);
           break;
 
         case 4:
@@ -332,8 +351,14 @@ void uart_data_clock (void)
 
         case 5:
           // pedal torque conversion
-          ui8_tx_buffer[5] = p_configuration_variables->ui8_pedal_torque_per_10_bit_ADC_step_x100;
-          
+		  if(ui8_torque_sensor_calibration_status == 1) {
+			//ui8_tx_buffer[5] = PEDAL_TORQUE_PER_10_BIT_ADC_STEP_BASE_X100;
+			ui8_tx_buffer[5] = p_configuration_variables->ui8_pedal_torque_per_10_bit_ADC_step_adv_x100;
+		  }
+		  else {
+			ui8_tx_buffer[5] = p_configuration_variables->ui8_pedal_torque_per_10_bit_ADC_step_x100;
+		  }
+		  
           // max battery current in amps
           ui8_tx_buffer[6] = p_configuration_variables->ui8_battery_max_current;
           
@@ -358,7 +383,18 @@ void uart_data_clock (void)
 		  // motor deceleration adjustment
           ui8_tx_buffer[7] = p_configuration_variables->ui8_motor_deceleration;
           break;
-        
+
+        case 7:
+		  // Torque ADC offset adjustment (0 / 34)
+          ui8_tx_buffer[5] = ui8_adc_pedal_torque_offset_adj;
+          
+          // Torque ADC range adjustment (0 / 40)
+          ui8_tx_buffer[6] = p_configuration_variables->ui8_adc_pedal_torque_range_adj;
+		  
+		  // Torque ADC angle adjustment (0 / 40)
+          ui8_tx_buffer[7] = ui8_adc_pedal_torque_angle_adj;
+			break;
+			
         default:
           ui8_message_ID = 0;
           break;

@@ -1,3 +1,20 @@
+TSDZ2 Open Source Firmware v20.1C.4 for KT-LCD3 display
+
+  1 - Improved torque sensor calibration.
+  2 - Added adjustment of the adc offset of the pedal torque.
+  3 - Added adjustment of the adc range of the pedal torque.
+  4 - Added adjustment of the adc angle of the pedal torque.
+  5 - Added choice Startup boost mode, at zero cadence or at zero speed.
+  6 - Added "Walk Assist" speed settings, one for each level.
+  7 - Added "Startup assist", to start from a standstill on difficult climbs.
+  8 - Improved progressivity in "Cadence Assist" mode.
+  9 - Added choice of soc % calculation mode.
+ 10 - Added voltage calibration to display.
+ 11 - Modified standing start, softer.
+ 12 - Fixed an overflow issue in power assist mode.
+ 13 - Fix of the calculation of human power.
+ 14 - Changed "dead time" value to 2.0 us.
+
 TSDZ2 Open Source Firmware v20.1C.3 for KT-LCD3 display
 
   1 - Updated to v12 version of mspider65 (Hall sensor calibration missing)

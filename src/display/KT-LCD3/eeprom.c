@@ -16,7 +16,7 @@
 
 static const uint8_t ui8_default_array[EEPROM_BYTES_STORED] = 
 {
-  DEFAULT_VALUE_KEY,                                                  // 0
+  NEW_VALUE_KEY,                                                  	  // 0
   DEFAULT_VALUE_ASSIST_LEVEL,                                         // 1
   DEFAULT_VALUE_NUMBER_OF_ASSIST_LEVELS,                              // 2
   DEFAULT_VALUE_WHEEL_PERIMETER_0,                                    // 3
@@ -164,13 +164,22 @@ static const uint8_t ui8_default_array[EEPROM_BYTES_STORED] =
   DEFAULT_VALUE_EMTB_ASSIST_LEVEL_9,                                  // 138
   DEFAULT_VALUE_EMTB_ASSIST_LEVEL_10,	                              // 139
   DEFAULT_VALUE_MOTOR_DECELERATION,                                   // 140
-  DEFAULT_VALUE_FIELD_WEAKENING_ENABLED											  // 141
+  DEFAULT_VALUE_FIELD_WEAKENING_ENABLED,							  // 141
+  DEFAULT_VALUE_ADC_TORQUE_OFFSET_ADJ,							  	  // 142
+  DEFAULT_VALUE_ADC_TORQUE_RANGE_ADJ,							  	  // 143
+  DEFAULT_VALUE_ADC_TORQUE_ANGLE_ADJ,							  	  // 144
+  DEFAULT_VALUE_STARTUP_ASSIST_FUNCTION_ENABLED,					  // 145
+  DEFAULT_VALUE_PEDAL_TORQUE_PER_10_BIT_ADC_STEP_ADV_X100             // 146
 };
 
 static uint8_t ui8_error_number = 0;
-
+static uint8_t ui8_array[EEPROM_BYTES_STORED];
+  
 void EEPROM_init(void)
-{
+{  
+  struct_configuration_variables *p_configuration_variables;
+  p_configuration_variables = get_configuration_variables();
+  
   volatile uint32_t ui32_delay_counter = 0;
   
   // deinitialize EEPROM
@@ -190,7 +199,7 @@ void EEPROM_init(void)
   uint8_t ui8_saved_key = FLASH_ReadByte(ADDRESS_KEY + EEPROM_BASE_ADDRESS);
   
   // check if key is valid
-  if (ui8_saved_key != DEFAULT_VALUE_KEY)
+  if (ui8_saved_key < DEFAULT_VALUE_KEY)
   {
     // set to default values
     EEPROM_controller(SET_TO_DEFAULT);
@@ -198,6 +207,26 @@ void EEPROM_init(void)
   
   // read from EEPROM
   EEPROM_controller(READ_FROM_MEMORY);
+  
+  // set default value new variables
+  if (ui8_saved_key < NEW_VALUE_KEY)
+  {
+	// Field weakening enabled
+	p_configuration_variables->ui8_field_weakening_enabled = DEFAULT_VALUE_FIELD_WEAKENING_ENABLED;
+	
+	// Torque ADC offset adjustment (0 / 34)
+    p_configuration_variables->ui8_adc_pedal_torque_offset_adj_set = DEFAULT_VALUE_ADC_TORQUE_OFFSET_ADJ;
+	  
+	// Torque ADC range adjustment (0 / 40)
+    p_configuration_variables->ui8_adc_pedal_torque_range_adj = DEFAULT_VALUE_ADC_TORQUE_RANGE_ADJ;
+	
+	// Torque ADC angle adjustment (0 / 40)
+    p_configuration_variables->ui8_adc_pedal_torque_angle_adj_index = DEFAULT_VALUE_ADC_TORQUE_ANGLE_ADJ;
+	
+	// pedal torque conversion advanced (calibration enabled)
+    p_configuration_variables->ui8_pedal_torque_per_10_bit_ADC_step_adv_x100 = DEFAULT_VALUE_PEDAL_TORQUE_PER_10_BIT_ADC_STEP_ADV_X100;
+  }
+  
 }
 
 
@@ -207,7 +236,6 @@ void EEPROM_controller(uint8_t ui8_operation)
   struct_configuration_variables *p_configuration_variables;
   p_configuration_variables = get_configuration_variables();
   
-  uint8_t ui8_array[EEPROM_BYTES_STORED];
   uint8_t ui8_temp;
   uint16_t ui16_temp;
   uint32_t ui32_temp;
@@ -319,7 +347,9 @@ void EEPROM_controller(uint8_t ui8_operation)
       {
         p_configuration_variables->ui8_walk_assist_level[ui8_i] = ui8_array[ADDRESS_WALK_ASSIST_LEVEL_1 + ui8_i];
       }
-      
+      // startup assist
+      p_configuration_variables->ui8_startup_assist_function_enabled = ui8_array[ADDRESS_STARTUP_ASSIST_FUNCTION_ENABLED];
+	  
       // cruise
       p_configuration_variables->ui8_cruise_function_enabled = ui8_array[ADDRESS_CRUISE_FUNCTION_ENABLED];
       p_configuration_variables->ui8_cruise_function_set_target_speed_enabled = ui8_array[ADDRESS_CRUISE_FUNCTION_SET_TARGET_SPEED_ENABLED];
@@ -471,9 +501,9 @@ void EEPROM_controller(uint8_t ui8_operation)
       
       // pedal torque conversion
       p_configuration_variables->ui8_pedal_torque_per_10_bit_ADC_step_x100 = ui8_array[ADDRESS_PEDAL_TORQUE_PER_10_BIT_ADC_STEP_X100];
+	  p_configuration_variables->ui8_pedal_torque_per_10_bit_ADC_step_adv_x100 = ui8_array[ADDRESS_PEDAL_TORQUE_PER_10_BIT_ADC_STEP_ADV_X100];
 	  
-	  
-      // pedal torque ADC offset set (weight=0)
+      // pedal torque ADC offset (weight=0)
       p_configuration_variables->ui8_adc_pedal_torque_offset_set = ui8_array[ADDRESS_PEDAL_TORQUE_ADC_OFFSET];
       
 	  // pedal torque ADC max (weight=max)
@@ -482,6 +512,15 @@ void EEPROM_controller(uint8_t ui8_operation)
       ui16_temp += (((uint16_t) ui8_temp << 8) & 0xff00);
       p_configuration_variables->ui16_adc_pedal_torque_max = ui16_temp;      
       
+	  // Torque ADC offset adjustment (0 / 34)
+      p_configuration_variables->ui8_adc_pedal_torque_offset_adj_set = ui8_array[ADDRESS_ADC_TORQUE_OFFSET_ADJ];
+	  
+	  // Torque ADC range adjustment (0 / 40)
+      p_configuration_variables->ui8_adc_pedal_torque_range_adj = ui8_array[ADDRESS_ADC_TORQUE_RANGE_ADJ];
+	  
+	  // Torque ADC angle adjustment (0 / 40)
+      p_configuration_variables->ui8_adc_pedal_torque_angle_adj_index = ui8_array[ADDRESS_ADC_TORQUE_ANGLE_ADJ_INDEX];
+	  
 	  // startup boost torque factor
 	  ui16_temp = ui8_array[ADDRESS_STARTUP_BOOST_TORQUE_FACTOR_0];
       ui8_temp = ui8_array[ADDRESS_STARTUP_BOOST_TORQUE_FACTOR_1];
@@ -528,7 +567,7 @@ void EEPROM_controller(uint8_t ui8_operation)
     case WRITE_TO_MEMORY:
     
       // key
-      ui8_array[ADDRESS_KEY] = DEFAULT_VALUE_KEY;
+      ui8_array[ADDRESS_KEY] = NEW_VALUE_KEY;
       
       // assist level
       ui8_array[ADDRESS_ASSIST_LEVEL] = p_configuration_variables->ui8_assist_level;
@@ -591,7 +630,9 @@ void EEPROM_controller(uint8_t ui8_operation)
       {
         ui8_array[ADDRESS_WALK_ASSIST_LEVEL_1 + ui8_i] = p_configuration_variables->ui8_walk_assist_level[ui8_i];
       }
-      
+      // startup assist
+      ui8_array[ADDRESS_STARTUP_ASSIST_FUNCTION_ENABLED] = p_configuration_variables->ui8_startup_assist_function_enabled;
+	  
       // cruise
       ui8_array[ADDRESS_CRUISE_FUNCTION_ENABLED] = p_configuration_variables->ui8_cruise_function_enabled;
       ui8_array[ADDRESS_CRUISE_FUNCTION_SET_TARGET_SPEED_ENABLED] = p_configuration_variables->ui8_cruise_function_set_target_speed_enabled;
@@ -692,7 +733,7 @@ void EEPROM_controller(uint8_t ui8_operation)
 
       // pedal torque conversion
       ui8_array[ADDRESS_PEDAL_TORQUE_PER_10_BIT_ADC_STEP_X100] = p_configuration_variables->ui8_pedal_torque_per_10_bit_ADC_step_x100;
-
+	  ui8_array[ADDRESS_PEDAL_TORQUE_PER_10_BIT_ADC_STEP_ADV_X100] = p_configuration_variables->ui8_pedal_torque_per_10_bit_ADC_step_adv_x100;
 	  
       // pedal torque ADC offset set (weight=0)
       ui8_array[ADDRESS_PEDAL_TORQUE_ADC_OFFSET] = p_configuration_variables->ui8_adc_pedal_torque_offset_set;
@@ -700,6 +741,15 @@ void EEPROM_controller(uint8_t ui8_operation)
       // pedal torque ADC range (weight=max)
       ui8_array[ADDRESS_PEDAL_TORQUE_ADC_MAX_0] = p_configuration_variables->ui16_adc_pedal_torque_max & 255;
       ui8_array[ADDRESS_PEDAL_TORQUE_ADC_MAX_1] = (p_configuration_variables->ui16_adc_pedal_torque_max >> 8) & 255;
+	  
+	  // Torque ADC offset adjustment (0 / 34)
+      ui8_array[ADDRESS_ADC_TORQUE_OFFSET_ADJ] = p_configuration_variables->ui8_adc_pedal_torque_offset_adj_set;
+	  
+	  // Torque ADC range adjustment (0 / 40)
+      ui8_array[ADDRESS_ADC_TORQUE_RANGE_ADJ] = p_configuration_variables->ui8_adc_pedal_torque_range_adj;
+	  
+	  // Torque ADC angle adjustment (0 / 40)
+      ui8_array[ADDRESS_ADC_TORQUE_ANGLE_ADJ_INDEX] = p_configuration_variables->ui8_adc_pedal_torque_angle_adj_index;
 	  
 	  // startup boost torque factor
       ui8_array[ADDRESS_STARTUP_BOOST_TORQUE_FACTOR_0] = p_configuration_variables->ui16_startup_boost_torque_factor & 255;
