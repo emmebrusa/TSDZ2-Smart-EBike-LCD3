@@ -63,7 +63,7 @@ ebike_app.h pins.h eeprom.h lights.h config.h
 RELS = $(EXTRASRCS:.c=.rel)
 
 INCLUDES = -I$(IDIR) -I$(IDIR1) -I. -I../
-CFLAGS = -m$(PLATFORM) -Ddouble=float --std-c99 --nolospre
+CFLAGS = -m$(PLATFORM) -Ddouble=float --std-c99 --nolospre --opt-code-speed --peep-asm --peep-file peep.txt
 ELF_FLAGS = --out-fmt-elf --debug
 LIBS = 
 

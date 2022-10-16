@@ -1,3 +1,7 @@
+TSDZ2 Open Source Firmware v20.1C.4-1 for KT-LCD3 display
+
+  1 - Added Peep optimization in Makefile (TSDZ2 only).
+
 TSDZ2 Open Source Firmware v20.1C.4 for KT-LCD3 display
 
   1 - Improved torque sensor calibration.
