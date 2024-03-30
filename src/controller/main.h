@@ -57,7 +57,7 @@
 #define PWM_DUTY_CYCLE_RAMP_UP_INVERSE_STEP_CADENCE_OFFSET      (uint8_t)(PWM_CYCLES_SECOND/260) // PWM_DUTY_CYCLE_RAMP_UP_INVERSE_STEP offset for cadence assist mode
 #define PWM_DUTY_CYCLE_RAMP_UP_INVERSE_STEP_DEFAULT             (uint8_t)(PWM_CYCLES_SECOND/98) // (should be less than 255-50->205) 160 -> 160 * 64 us for every duty cycle increment at 15.625KHz
 #define PWM_DUTY_CYCLE_RAMP_UP_INVERSE_STEP_MIN                 (uint8_t)(PWM_CYCLES_SECOND/781) // 20 -> 20 * 64 us for every duty cycle increment at 15.625KHz
-#define PWM_DUTY_CYCLE_RAMP_DOWN_INVERSE_STEP_DEFAULT           (uint8_t)(PWM_CYCLES_SECOND/390) // 40 -> 40 * 64 us for every duty cycle decrement at 15.625KHz
+#define PWM_DUTY_CYCLE_RAMP_DOWN_INVERSE_STEP_DEFAULT           (uint8_t)(PWM_CYCLES_SECOND/260) // 60 -> 60 * 64 us for every duty cycle decrement at 15.625KHz
 #define PWM_DUTY_CYCLE_RAMP_DOWN_INVERSE_STEP_MIN               (uint8_t)(PWM_CYCLES_SECOND/1953) // 8 -> 8 * 64 us for every duty cycle decrement at 15.625KHz
 #define CRUISE_DUTY_CYCLE_RAMP_UP_INVERSE_STEP                  (uint8_t)(PWM_CYCLES_SECOND/195) // 80 at 15.625KHz
 #define WALK_ASSIST_DUTY_CYCLE_RAMP_UP_INVERSE_STEP             (uint8_t)(PWM_CYCLES_SECOND/78) // 200 at 15.625KHz
@@ -122,9 +122,6 @@ HALL_COUNTER_OFFSET_UP:    29 -> 44
 
 #define MOTOR_ROTOR_INTERPOLATION_MIN_ERPS      10
 
-// adc torque offset gap value for error
-#define ADC_TORQUE_SENSOR_OFFSET_THRESHOLD		25
-
 // Torque sensor values
 #define ADC_TORQUE_SENSOR_OFFSET_DEFAULT		150
 // adc torque range parameters for remapping
@@ -144,7 +141,9 @@ HALL_COUNTER_OFFSET_UP:    29 -> 44
  but a value of 25 may be good.
  ---------------------------------------------------------*/
 
+#define ADC_10_BIT_BATTERY_OVERCURRENT							  144 // 23 amps
 #define ADC_10_BIT_BATTERY_CURRENT_MAX                            112	// 18 amps
+//#define ADC_10_BIT_BATTERY_CURRENT_MAX                            124	// 20 amps
 #define ADC_10_BIT_MOTOR_PHASE_CURRENT_MAX                        187	// 30 amps
 //#define ADC_10_BIT_BATTERY_CURRENT_MAX                            106	// 17 amps
 //#define ADC_10_BIT_MOTOR_PHASE_CURRENT_MAX                        177	// 28 amps
@@ -223,12 +222,12 @@ HALL_COUNTER_OFFSET_UP:    29 -> 44
 #define BATTERY_CURRENT_PER_10_BIT_ADC_STEP_X100                  16  // 0.16A x 10 bit ADC step
 
 // walk assist
-#define WALK_ASSIST_PROP_GAIN					12
+#define WALK_ASSIST_ERPS_THRESHOLD				20
 #define WALK_ASSIST_ADJ_DELAY_MIN				4
+#define WALK_ASSIST_ADJ_DELAY_STARTUP			10
 #define WALK_ASSIST_DUTY_CYCLE_MIN              40
-#define WALK_ASSIST_DUTY_CYCLE_MAX              120
-#define WALK_ASSIST_ADC_BATTERY_CURRENT_MAX     80
-#define WALK_ASSIST_SPEED_MIN_DETECTABLE		38
-#define WALK_ASSIST_SPEED_NO_DETECTED_COEFF		3
+#define WALK_ASSIST_DUTY_CYCLE_STARTUP			50
+#define WALK_ASSIST_DUTY_CYCLE_MAX              130
+#define WALK_ASSIST_ADC_BATTERY_CURRENT_MAX     40
 
 #endif // _MAIN_H_

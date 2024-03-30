@@ -26,6 +26,9 @@ void uart2_init(void) {
             UART2_MODE_TXRX_ENABLE);
 
     UART2_ITConfig(UART2_IT_RXNE_OR, ENABLE);
+	
+	// Set UART2 IRQ priority to level 1 :0=lowest - 3=highest(default value)
+    ITC_SetSoftwarePriority(UART2_IRQHANDLER, ITC_PRIORITYLEVEL_2);
 } 
 
 #if __SDCC_REVISION < 9624

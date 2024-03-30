@@ -711,8 +711,6 @@ void TIM1_CAP_COM_IRQHandler(void) __interrupt(TIM1_CAP_COM_IRQHANDLER)
         jreq 00051$
         clrw x          // ui8_adc_motor_phase_current = (ui8_adc_battery_current_filtered << 6)) / ui8_g_duty_cycle;
         ld  xh, a
-        srlw    x
-        srlw    x
         ld  a, _ui8_g_duty_cycle+0
         div x, a
         ld  a, xl
@@ -763,7 +761,7 @@ void TIM1_CAP_COM_IRQHandler(void) __interrupt(TIM1_CAP_COM_IRQHANDLER)
                 || (ui16_hall_counter_total < (HALL_COUNTER_FREQ / MOTOR_OVER_SPEED_ERPS))
                 || (ui16_adc_voltage < ui16_adc_voltage_cut_off)
                 || (ui8_brake_state)
-				|| (!ui8_assist_level)) {
+				|| (!ui8_assist_level_flag)) {
 				
 			// reset duty cycle ramp up counter (filter)
             ui8_counter_duty_cycle_ramp_up = 0;

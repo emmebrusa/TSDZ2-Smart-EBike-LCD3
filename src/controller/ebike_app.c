@@ -33,7 +33,7 @@ volatile struct_configuration_variables m_configuration_variables = {
         };
 
 // system
-uint8_t ui8_assist_level = 0;
+uint8_t ui8_assist_level_flag = 0;
 static uint8_t ui8_riding_mode = OFF_MODE;
 static uint8_t ui8_riding_mode_parameter = 0;
 static uint8_t ui8_system_state = NO_ERROR;
@@ -44,6 +44,7 @@ static uint8_t ui8_lights_configuration = 0;
 static uint8_t ui8_assist_with_error_enabled = 0;
 uint8_t ui8_lights_state = 0;
 uint8_t ui8_field_weakening_enabled = 0;
+static uint8_t ui8_battery_overcurrent = 0;
 
 // power control
 static uint8_t ui8_battery_current_max = DEFAULT_VALUE_BATTERY_CURRENT_MAX;
@@ -328,10 +329,12 @@ static uint8_t ui8_walk_assist_speed_target_x10 = 0;
 static uint8_t ui8_walk_assist_duty_cycle_counter = 0;
 static uint8_t ui8_walk_assist_duty_cycle_target = WALK_ASSIST_DUTY_CYCLE_MIN;
 static uint8_t ui8_walk_assist_duty_cycle_max = WALK_ASSIST_DUTY_CYCLE_MIN;
-static uint8_t ui8_walk_assist_duty_cycle_flag = 0;
 static uint8_t ui8_walk_assist_adj_delay = WALK_ASSIST_ADJ_DELAY_MIN;
-static uint8_t ui8_walk_assist_no_speed_flag = 0;
-static void calc_walk_assist_duty_cycle_no_speed();
+static uint16_t ui16_walk_assist_wheel_speed_counter = 0;
+static uint16_t ui16_walk_assist_erps_target = 0;
+static uint16_t ui16_walk_assist_erps_min = 0;
+static uint16_t ui16_walk_assist_erps_max = 0;
+static uint8_t ui8_walk_assist_speed_flag = 0;
 
 // cruise
 static int16_t i16_cruise_pid_kp = 0;
@@ -432,7 +435,7 @@ void ebike_app_controller(void)
     get_pedal_torque();
 
 	// check if there are any errors for motor control
-    check_system();
+    //check_system();
 
     // send/receive data every 4 cycles (25ms * 4)
 	static uint8_t ui8_counter;
@@ -446,6 +449,9 @@ void ebike_app_controller(void)
 			break;
 		case 2:
 			ebike_control_lights();
+			break;
+		case 3:
+			check_system();
 			break;
 	}
 	
@@ -470,7 +476,7 @@ static void ebike_control_motor(void)
 	
 	// assist level = OFF if the motor goes alone and with current or duty cycle target = 0 (safety)
 	if((ui16_motor_speed_erps)&&(!ui8_adc_battery_current_target || !ui8_duty_cycle_target))
-		ui8_assist_level = 0;
+		ui8_assist_level_flag = 0;
 	
     // reset control variables (safety)
     ui8_duty_cycle_ramp_up_inverse_step = PWM_DUTY_CYCLE_RAMP_UP_INVERSE_STEP_DEFAULT;
@@ -504,9 +510,29 @@ static void ebike_control_motor(void)
     // speed limit
     apply_speed_limit();
 
+
+	// Check battery Over-current (read current here in case PWM interrupt for some error was disabled)
+	// Read in assembler to ensure data consistency (conversion overrun)
+	#ifndef __CDT_PARSER__ // avoid Eclipse syntax check
+	__asm
+		ldw x, 0x53ea // ADC1->DB5RH
+		cpw x, 0x53ea // ADC1->DB5RH
+		jreq 00010$
+		ldw x, 0x53ea // ADC1->DB5RH
+	00010$:
+		cpw x, #ADC_10_BIT_BATTERY_OVERCURRENT
+		jrc 00011$
+		mov _ui8_battery_overcurrent+0, #ERROR_BATTERY_OVERCURRENT
+	00011$:
+	__endasm;
+	#endif
+	
+	ui8_system_state = ui8_battery_overcurrent;
+	
     // reset control parameters if... (safety)
     if((ui8_brake_state) ||
 	  (ui8_system_state == ERROR_MOTOR_BLOCKED) ||
+	  (ui8_system_state == ERROR_BATTERY_OVERCURRENT) ||				  
 	  (!ui8_motor_enabled) ||
 	  (ui8_riding_mode == OFF_MODE) ||
 	  (ui8_riding_mode_parameter == 0) ||
@@ -556,9 +582,10 @@ static void ebike_control_motor(void)
 
     // check if the motor should be enabled or disabled
     if (ui8_motor_enabled
-            && (ui16_motor_speed_erps == 0)
+		&& ((ui8_system_state == ERROR_BATTERY_OVERCURRENT)
+            || ((ui16_motor_speed_erps == 0)
             && (!ui8_adc_battery_current_target)
-            && (!ui8_g_duty_cycle)) {
+            && (!ui8_g_duty_cycle)))) {
         ui8_motor_enabled = 0;
         motor_disable_pwm();
     } else if (!ui8_motor_enabled
@@ -925,161 +952,118 @@ static void apply_emtb_assist()
 
 static void apply_walk_assist()
 {
-	// get walk assist speed target x10
-	ui8_walk_assist_speed_target_x10 = ui8_riding_mode_parameter;
-	
-	if(ui8_walk_assist_speed_target_x10 < WALK_ASSIST_PROP_GAIN) {
-		ui8_walk_assist_speed_target_x10 = WALK_ASSIST_PROP_GAIN;
+	if(ui8_assist_with_error_enabled) {
+		// get walk assist duty cycle target
+		ui8_walk_assist_duty_cycle_target = ui8_riding_mode_parameter + 20;
 	}
-
-	if(ui16_wheel_speed_x10 < WALK_ASSIST_THRESHOLD_SPEED_X10) {
-		if(ui8_assist_with_error_enabled) {
-			// get walk assist duty cycle target
-			ui8_walk_assist_duty_cycle_target = ui8_riding_mode_parameter + 20;
+	else {
+		// get walk assist speed target x10
+		ui8_walk_assist_speed_target_x10 = ui8_riding_mode_parameter;
+		
+		// set walk assist duty cycle target
+		if((!ui8_walk_assist_speed_flag)&&(!ui16_motor_speed_erps)) {
+			ui8_walk_assist_duty_cycle_target = WALK_ASSIST_DUTY_CYCLE_STARTUP;
+			ui8_walk_assist_duty_cycle_max = WALK_ASSIST_DUTY_CYCLE_STARTUP;
+			ui16_walk_assist_wheel_speed_counter = 0;
+			ui16_walk_assist_erps_target = 0;
 		}
-		else {
-			// set walk assist duty cycle target
-			if(ui16_motor_speed_erps == 0) {
-				ui8_walk_assist_duty_cycle_target = WALK_ASSIST_DUTY_CYCLE_MIN;
-				ui8_walk_assist_duty_cycle_max = WALK_ASSIST_DUTY_CYCLE_MIN;
-				ui8_walk_assist_duty_cycle_flag = 0;
-				ui8_walk_assist_no_speed_flag = 0;
-			}
-			else if(ui16_wheel_speed_x10 == 0) {
+		else if(ui8_walk_assist_speed_flag) {
+			if(ui16_motor_speed_erps < ui16_walk_assist_erps_min) {
 				ui8_walk_assist_adj_delay = WALK_ASSIST_ADJ_DELAY_MIN;
 				
 				if(ui8_walk_assist_duty_cycle_counter++ > ui8_walk_assist_adj_delay) {
-					if((!ui8_walk_assist_duty_cycle_flag)&&(ui8_walk_assist_duty_cycle_max < WALK_ASSIST_DUTY_CYCLE_MAX)) {
-						ui8_walk_assist_duty_cycle_max++;
-					}
-					if(ui8_walk_assist_duty_cycle_target > ui8_walk_assist_duty_cycle_max) {
-						ui8_walk_assist_duty_cycle_target--;
-					}
-					else if(ui8_walk_assist_duty_cycle_target < ui8_walk_assist_duty_cycle_max) {
+					if(ui8_walk_assist_duty_cycle_target < ui8_walk_assist_duty_cycle_max) {
 						ui8_walk_assist_duty_cycle_target++;
+					}
+					else {
+						ui8_walk_assist_duty_cycle_max++;
 					}
 					ui8_walk_assist_duty_cycle_counter = 0;
 				}
 			}
-			else if(ui16_wheel_speed_x10 < (ui8_walk_assist_speed_target_x10 - WALK_ASSIST_PROP_GAIN)) {
-				if(ui8_walk_assist_speed_target_x10 < WALK_ASSIST_SPEED_MIN_DETECTABLE) {
-					calc_walk_assist_duty_cycle_no_speed();
-				}
-				else {
-					ui8_walk_assist_adj_delay = WALK_ASSIST_ADJ_DELAY_MIN;
-					
-					if(ui8_walk_assist_duty_cycle_counter++ > ui8_walk_assist_adj_delay) {
-						if(ui8_walk_assist_duty_cycle_target < ui8_walk_assist_duty_cycle_max) {
-							ui8_walk_assist_duty_cycle_target++;
-						}
-						else if(ui8_walk_assist_duty_cycle_target == ui8_walk_assist_duty_cycle_max) {
-							ui8_walk_assist_duty_cycle_max++;
-						}
-						ui8_walk_assist_duty_cycle_counter = 0;
+			else if(ui16_motor_speed_erps < ui16_walk_assist_erps_target) {
+				ui8_walk_assist_adj_delay = (ui16_motor_speed_erps - ui16_walk_assist_erps_min) * WALK_ASSIST_ADJ_DELAY_MIN;
+				
+				if(ui8_walk_assist_duty_cycle_counter++ > ui8_walk_assist_adj_delay) {
+					if(ui8_walk_assist_duty_cycle_target < ui8_walk_assist_duty_cycle_max) {
+						ui8_walk_assist_duty_cycle_target++;
 					}
-					ui8_walk_assist_duty_cycle_flag = 1;
+					
+					ui8_walk_assist_duty_cycle_counter = 0;
 				}
 			}
-			else if(ui16_wheel_speed_x10 < ui8_walk_assist_speed_target_x10) {
-				if(ui8_walk_assist_speed_target_x10 < WALK_ASSIST_SPEED_MIN_DETECTABLE) {
-					calc_walk_assist_duty_cycle_no_speed();
-				}
-				else {
-					ui8_walk_assist_adj_delay = (WALK_ASSIST_PROP_GAIN - (ui8_walk_assist_speed_target_x10 - ui16_wheel_speed_x10)) * WALK_ASSIST_ADJ_DELAY_MIN;
-					
-					if(ui8_walk_assist_duty_cycle_counter++ > ui8_walk_assist_adj_delay) {
-						if(ui8_walk_assist_duty_cycle_target < ui8_walk_assist_duty_cycle_max) {
-							ui8_walk_assist_duty_cycle_target++;
-						}
-						else if(ui8_walk_assist_duty_cycle_target == ui8_walk_assist_duty_cycle_max) {
-							ui8_walk_assist_duty_cycle_max++;
-						}
-						ui8_walk_assist_duty_cycle_counter = 0;
+			else if(ui16_motor_speed_erps < ui16_walk_assist_erps_max) {
+				ui8_walk_assist_adj_delay = (ui16_walk_assist_erps_max - ui16_motor_speed_erps) * WALK_ASSIST_ADJ_DELAY_MIN;
+			
+				if(ui8_walk_assist_duty_cycle_counter++ > ui8_walk_assist_adj_delay) {
+					if(ui8_walk_assist_duty_cycle_target > WALK_ASSIST_DUTY_CYCLE_MIN) {
+						ui8_walk_assist_duty_cycle_target--;
 					}
-					ui8_walk_assist_duty_cycle_flag = 1;
+					ui8_walk_assist_duty_cycle_counter = 0;
 				}
 			}
-			else if(ui16_wheel_speed_x10 < (ui8_walk_assist_speed_target_x10 + WALK_ASSIST_PROP_GAIN)) {
-				if(ui8_walk_assist_speed_target_x10 < WALK_ASSIST_SPEED_MIN_DETECTABLE) {
-					calc_walk_assist_duty_cycle_no_speed();
-				}
-				else {
-					ui8_walk_assist_adj_delay = (WALK_ASSIST_PROP_GAIN - (ui16_wheel_speed_x10 - ui8_walk_assist_speed_target_x10)) * WALK_ASSIST_ADJ_DELAY_MIN;
-					
-					if(ui8_walk_assist_duty_cycle_counter++ > ui8_walk_assist_adj_delay) {
-						if(ui8_walk_assist_duty_cycle_target > WALK_ASSIST_DUTY_CYCLE_MIN) {
-							ui8_walk_assist_duty_cycle_target--;
-						}
-						ui8_walk_assist_duty_cycle_counter = 0;
+			else if(ui16_motor_speed_erps >= ui16_walk_assist_erps_max) {
+				ui8_walk_assist_adj_delay = WALK_ASSIST_ADJ_DELAY_MIN;
+			
+				if(ui8_walk_assist_duty_cycle_counter++ > ui8_walk_assist_adj_delay) {
+					if(ui8_walk_assist_duty_cycle_target > WALK_ASSIST_DUTY_CYCLE_MIN) {
+						ui8_walk_assist_duty_cycle_target--;
+						ui8_walk_assist_duty_cycle_max--;
 					}
-					ui8_walk_assist_duty_cycle_flag = 1;
+					ui8_walk_assist_duty_cycle_counter = 0;
 				}
 			}
-			else if(ui16_wheel_speed_x10 >= (ui8_walk_assist_speed_target_x10 + WALK_ASSIST_PROP_GAIN)) {
-				if(ui8_walk_assist_speed_target_x10 < WALK_ASSIST_SPEED_MIN_DETECTABLE) {
-					calc_walk_assist_duty_cycle_no_speed();
-				}
-				else {
-					ui8_walk_assist_adj_delay = WALK_ASSIST_ADJ_DELAY_MIN;
-					
-					if(ui8_walk_assist_duty_cycle_counter++ > ui8_walk_assist_adj_delay) {
-						if(ui8_walk_assist_duty_cycle_target > WALK_ASSIST_DUTY_CYCLE_MIN) {
-							ui8_walk_assist_duty_cycle_target--;
-						}
-						ui8_walk_assist_duty_cycle_counter = 0;
-					}
-					ui8_walk_assist_duty_cycle_flag = 1;
-				}
-			}
-		}
-		
-        if(ui8_walk_assist_duty_cycle_target > WALK_ASSIST_DUTY_CYCLE_MAX) {
-            ui8_walk_assist_duty_cycle_target = WALK_ASSIST_DUTY_CYCLE_MAX;
-		}
-		
-        // set motor acceleration
-        ui8_duty_cycle_ramp_up_inverse_step = WALK_ASSIST_DUTY_CYCLE_RAMP_UP_INVERSE_STEP;
-        ui8_duty_cycle_ramp_down_inverse_step = PWM_DUTY_CYCLE_RAMP_DOWN_INVERSE_STEP_DEFAULT;
-
-        // set battery current target
-        ui8_adc_battery_current_target = ui8_min(WALK_ASSIST_ADC_BATTERY_CURRENT_MAX, ui8_adc_battery_current_max);
-		
-        // set duty cycle target
-        ui8_duty_cycle_target = ui8_walk_assist_duty_cycle_target;
-    }
-}
-
-// calculate walk assist duty cycle for the undetectable speed target
-static void calc_walk_assist_duty_cycle_no_speed()
-{
-	if(ui8_walk_assist_duty_cycle_counter++ > WALK_ASSIST_ADJ_DELAY_MIN) {
-		if(ui8_walk_assist_duty_cycle_target > ui8_walk_assist_duty_cycle_max) {
-			ui8_walk_assist_duty_cycle_target--;
-		}
-		else if(ui16_wheel_speed_x10 >= WALK_ASSIST_SPEED_MIN_DETECTABLE) {
-				ui8_walk_assist_duty_cycle_target--;
-				ui8_walk_assist_duty_cycle_max--;
-		}
-		ui8_walk_assist_duty_cycle_counter = 0;
-	}
-	
-	if(!ui8_walk_assist_no_speed_flag) {
-		uint8_t ui8_decrease_duty_cycle_max =
-			(ui8_walk_assist_duty_cycle_max - WALK_ASSIST_DUTY_CYCLE_MIN)
-			- (ui8_walk_assist_duty_cycle_max - WALK_ASSIST_DUTY_CYCLE_MIN)
-			* (((ui16_wheel_speed_x10 - WALK_ASSIST_PROP_GAIN)
-			- (ui16_wheel_speed_x10 - ui8_walk_assist_speed_target_x10))
-			* WALK_ASSIST_SPEED_NO_DETECTED_COEFF) / 100;
-							
-		if(ui8_walk_assist_duty_cycle_max > (WALK_ASSIST_DUTY_CYCLE_MIN + ui8_decrease_duty_cycle_max)) {
-			ui8_walk_assist_duty_cycle_max -= ui8_decrease_duty_cycle_max;
 		}
 		else {
-			ui8_walk_assist_duty_cycle_max = WALK_ASSIST_DUTY_CYCLE_MIN;
+			ui8_walk_assist_adj_delay = WALK_ASSIST_ADJ_DELAY_STARTUP;
+			
+			if(ui8_walk_assist_duty_cycle_counter++ > ui8_walk_assist_adj_delay) {
+				if(ui16_wheel_speed_x10) {
+					if(ui16_wheel_speed_x10 > 42) {
+						ui8_walk_assist_duty_cycle_target--;
+					}
+					
+					if(ui16_walk_assist_wheel_speed_counter++ >= 10) {
+						ui8_walk_assist_duty_cycle_max += 10;
+					
+						// set walk assist erps target
+						ui16_walk_assist_erps_target = ((ui16_motor_speed_erps * ui8_walk_assist_speed_target_x10) / ui16_wheel_speed_x10);
+						ui16_walk_assist_erps_min = ui16_walk_assist_erps_target - WALK_ASSIST_ERPS_THRESHOLD;
+						ui16_walk_assist_erps_max = ui16_walk_assist_erps_target + WALK_ASSIST_ERPS_THRESHOLD;
+					
+						// set walk assist speed flag
+						ui8_walk_assist_speed_flag = 1;
+					}
+				}
+				else {
+					if((ui8_walk_assist_duty_cycle_max + 10) < WALK_ASSIST_DUTY_CYCLE_MAX) {
+						ui8_walk_assist_duty_cycle_target++;
+						ui8_walk_assist_duty_cycle_max++;
+					}
+				}
+				ui8_walk_assist_duty_cycle_counter = 0;
+			}
 		}
-		ui8_walk_assist_no_speed_flag = 1;
 	}
-	ui8_walk_assist_duty_cycle_flag = 1;
+
+	if(ui8_walk_assist_duty_cycle_target > WALK_ASSIST_DUTY_CYCLE_MAX) {
+		ui8_walk_assist_duty_cycle_target = WALK_ASSIST_DUTY_CYCLE_MAX;
+	}
+		
+	// set motor acceleration
+	ui8_duty_cycle_ramp_up_inverse_step = WALK_ASSIST_DUTY_CYCLE_RAMP_UP_INVERSE_STEP;	
+	ui8_duty_cycle_ramp_down_inverse_step = PWM_DUTY_CYCLE_RAMP_DOWN_INVERSE_STEP_DEFAULT;
+	
+	if(ui16_wheel_speed_x10 < WALK_ASSIST_THRESHOLD_SPEED_X10) {
+		// set battery current target
+		ui8_adc_battery_current_target = ui8_min(WALK_ASSIST_ADC_BATTERY_CURRENT_MAX, ui8_adc_battery_current_max);
+		// set duty cycle target
+		ui8_duty_cycle_target = ui8_walk_assist_duty_cycle_target;
+	}
+	else {
+		ui8_adc_battery_current_target = 0;
+		ui8_duty_cycle_target = 0;
+	}
 }
 
 
@@ -1439,7 +1423,7 @@ static void calc_cadence(void)
 }
 
 
-#define TOFFSET_CYCLES 120
+#define TOFFSET_CYCLES 120 // 3sec (25ms*120)
 static uint8_t toffset_cycle_counter = 0;
 
 static void get_pedal_torque(void)
@@ -1562,8 +1546,8 @@ struct_configuration_variables* get_configuration_variables(void)
 
 static void check_system()
 {
-
-#define CHECK_SPEED_SENSOR_COUNTER_THRESHOLD          500 // 500 * 25ms = 12.5 seconds
+// E08 ERROR_SPEED_SENSOR
+#define CHECK_SPEED_SENSOR_COUNTER_THRESHOLD          125 // 125 * 100ms = 12.5 seconds
 #define MOTOR_ERPS_SPEED_THRESHOLD	                  180
 	static uint16_t ui16_check_speed_sensor_counter;
 	static uint16_t ui16_error_speed_sensor_counter;
@@ -1601,23 +1585,23 @@ static void check_system()
 	}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#define CHECK_CADENCE_SENSOR_COUNTER_THRESHOLD          1000 // 1000 * 25ms = 25 seconds
-#define CADENCE_SENSOR_RESET_COUNTER_THRESHOLD         	250  // 250 * 25ms = 6,25 seconds
+// E03 ERROR_CADENCE_SENSOR
+#define CHECK_CADENCE_SENSOR_COUNTER_THRESHOLD          250 // 250 * 100ms = 25 seconds
+#define CADENCE_SENSOR_RESET_COUNTER_THRESHOLD         	80  // 800 * 100ms = 8.0 seconds
 #define ADC_TORQUE_SENSOR_DELTA_THRESHOLD				(uint16_t)((ADC_TORQUE_SENSOR_RANGE_TARGET >> 1) + 20)
-	static uint16_t ui16_check_cadence_sensor_counter;
+	static uint8_t ui8_check_cadence_sensor_counter;
 	static uint8_t ui8_error_cadence_sensor_counter;
 	
 	// check cadence sensor
-	if((ui16_adc_pedal_torque_delta_no_boost > ADC_TORQUE_SENSOR_DELTA_THRESHOLD)&&
-	  ((ui8_pedal_cadence_RPM > 130)||(!ui8_pedal_cadence_RPM))) {
-		ui16_check_cadence_sensor_counter++;
+	if((ui16_adc_pedal_torque_delta_no_boost > ADC_TORQUE_SENSOR_DELTA_THRESHOLD)
+	  &&(!ui8_startup_assist)&&((ui8_pedal_cadence_RPM > 130)||(!ui8_pedal_cadence_RPM))) {
+		ui8_check_cadence_sensor_counter++;
 	}
 	else {
-		ui16_check_cadence_sensor_counter = 0;
+		ui8_check_cadence_sensor_counter = 0;
 	}
 	
-	if(ui16_check_cadence_sensor_counter > CHECK_CADENCE_SENSOR_COUNTER_THRESHOLD) {
+	if(ui8_check_cadence_sensor_counter > CHECK_CADENCE_SENSOR_COUNTER_THRESHOLD) {
 		// set cadence sensor error code
 		ui8_system_state = ERROR_CADENCE_SENSOR;
 	}
@@ -1636,7 +1620,7 @@ static void check_system()
 	}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	
+// E02 ERROR_TORQUE_SENSOR
     // check torque sensor
     if (((ui16_adc_pedal_torque_offset > 300) ||
 		(ui16_adc_pedal_torque_offset < 10) ||
@@ -1653,11 +1637,11 @@ static void check_system()
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#define MOTOR_BLOCKED_COUNTER_THRESHOLD               	8  // 8 * 25ms = 0.2 second
+// E04 ERROR_MOTOR_BLOCKED
+#define MOTOR_BLOCKED_COUNTER_THRESHOLD               	2  // 2 * 100ms = 0.2 seconds
 #define MOTOR_BLOCKED_BATTERY_CURRENT_THRESHOLD_X10   	30 // 30 = 3.0 amps
 #define MOTOR_BLOCKED_ERPS_THRESHOLD                  	20 // 20 ERPS
-#define MOTOR_BLOCKED_RESET_COUNTER_THRESHOLD         	250  // 250 * 25ms = 6.25 seconds
+#define MOTOR_BLOCKED_RESET_COUNTER_THRESHOLD         	80  // 80 * 100ms = 8.0 seconds
 
     static uint8_t ui8_motor_blocked_counter;
     static uint8_t ui8_motor_blocked_reset_counter;
@@ -1989,6 +1973,10 @@ static void uart_receive_package(void)
             ui8_lights_state = ui8_temp & 1;
             // riding mode
             ui8_riding_mode = (ui8_temp & 240 ) >> 4;
+			
+			if(ui8_riding_mode != WALK_ASSIST_MODE)
+			// reset walk assist speed flag
+			ui8_walk_assist_speed_flag = 0;
 
             // riding mode parameter
             ui8_riding_mode_parameter = ui8_rx_buffer[3];
@@ -2049,7 +2037,7 @@ static void uart_receive_package(void)
 				//ui8_pedal_cadence_fast_stop = (ui8_temp & 16) >> 4;
 				ui8_startup_boost_at_zero = (ui8_temp & 16) >> 4;
 				ui8_field_weakening_enabled = (ui8_temp & 32) >> 5;
-				ui8_assist_level = !((ui8_temp & 64) >> 6);
+				ui8_assist_level_flag = !((ui8_temp & 64) >> 6);
 				ui8_startup_assist = (ui8_temp & 128) >> 7;
 				
                 // motor over temperature min value limit
